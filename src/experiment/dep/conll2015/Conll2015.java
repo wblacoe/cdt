@@ -85,6 +85,6 @@ public class Conll2015 extends DepExperiment {
         ipc.importFromFile(innerProductsFile);
         ipc.setHyperParameter("dimensionality", "" + DepNeighbourhoodSpace.getDimensionality());
         ipc.setHyperParameter("ldopcardinality", "" + ldopCardinality);
+
     }
-    
 }

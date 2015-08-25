@@ -1,15 +1,7 @@
 package space;
 
 import cdt.Helper;
-import experiment.dep.TargetWord;
-import experiment.dep.Vocabulary;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import linearAlgebra.value.ValueMatrix;
-import numberTypes.NNumber;
 
 public class TensorSpace {
     
@@ -171,74 +163,4 @@ public class TensorSpace {
         return projectFolder;
     }
     
-    
-    /*public static File frobeniusInnerProductsFile = null;
-    
-    public static void setFrobeniusInnerProductsFile(File f){
-        frobeniusInnerProductsFile = f;
-    }
-    
-    public static File getFrobeniusInnerProductsFile(){
-        return frobeniusInnerProductsFile;
-    }
-    
-    public static HashMap<String, NNumber> frobeniusInnerProducts = new HashMap<>();
-    
-    public static synchronized void setFrobeniusInnerProduct(String word1, String word2, NNumber ip){
-        String key = word1.compareTo(word2) <= 0 ? word1 + "\t" + word2 : word2 + "\t" + word1;
-        frobeniusInnerProducts.put(key, ip);
-    }
-    
-    public static synchronized NNumber getFrobeniusInnerProduct(String word1, String word2, boolean computeIfNull){
-        String key = word1.compareTo(word2) <= 0 ? word1 + "\t" + word2 : word2 + "\t" + word1;
-        NNumber existingIp = frobeniusInnerProducts.get(key);
-        if(existingIp == null){
-            if(!computeIfNull) return null;
-            TargetWord tw1 = Vocabulary.getTargetWord(word1);
-            TargetWord tw2 = Vocabulary.getTargetWord(word2);
-            ValueMatrix m1 = (ValueMatrix) tw1.getRepresentation();
-            ValueMatrix m2 = (ValueMatrix) tw2.getRepresentation();
-            existingIp = m1.innerProduct(m2);
-            setFrobeniusInnerProduct(word1, word2, existingIp);
-        }
-        return existingIp;
-    }
-    
-    //assumes that number type has been defined
-    public static void importFrobeniusInnerProducts(){
-        try{
-            if(frobeniusInnerProductsFile != null && frobeniusInnerProductsFile.exists()){
-                BufferedReader in = Helper.getFileReader(frobeniusInnerProductsFile);
-
-                String line;
-                while((line = in.readLine()) != null){
-                    String[] entries = line.split("\t");
-                    String word1 = entries[0];
-                    String word2 = entries[1];
-                    float n = Float.parseFloat(entries[2]);
-                    setFrobeniusInnerProduct(word1, word2, NNumber.create(n));
-                }
-
-                in.close();
-            }
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-    
-    public static void exportFrobeniusInnerProducts(){
-        try{
-            if(frobeniusInnerProductsFile != null){
-                BufferedWriter out = Helper.getFileWriter(frobeniusInnerProductsFile);
-                    for(String key : frobeniusInnerProducts.keySet()){
-                        out.write(key + "\t" + frobeniusInnerProducts.get(key) + "\n");
-                    }
-                out.close();
-            }
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-    */
-
 }

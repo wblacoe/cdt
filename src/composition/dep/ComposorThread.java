@@ -146,6 +146,6 @@ public class ComposorThread implements Runnable {
 	public void run() {
 		composeTrees();
 		composor.reportComposorThreadDone(this, treeRepresentations, ipc);
-	}
-
+    }
+    
 }
