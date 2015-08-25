@@ -172,7 +172,7 @@ public class TensorSpace {
     }
     
     
-    public static File frobeniusInnerProductsFile = null;
+    /*public static File frobeniusInnerProductsFile = null;
     
     public static void setFrobeniusInnerProductsFile(File f){
         frobeniusInnerProductsFile = f;
@@ -239,5 +239,6 @@ public class TensorSpace {
             e.printStackTrace();
         }
     }
+    */
 
 }

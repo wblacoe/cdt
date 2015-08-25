@@ -7,6 +7,7 @@ import experiment.Dataset;
 import experiment.dep.DepExperiment;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
+import innerProduct.InnerProductsCache;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -210,7 +211,6 @@ public class Wordsim353 extends DepExperiment{
         DepNeighbourhoodSpace.importFromFile(spaceFile);
         DepNeighbourhoodSpace.saveToFile(spaceFile);
         DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
-        DepNeighbourhoodSpace.setFrobeniusInnerProductsFile(new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/wordsim353/innerProducts.txt"));
         
         //experiment
         Wordsim353 exp = new Wordsim353();
@@ -222,7 +222,9 @@ public class Wordsim353 extends DepExperiment{
 		//associationate jdops to ldops
         File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
         DepMarginalCounts dmc = DepMarginalCounts.importFromFile(marginalCountsFile);
-        SppmiFunction sf = new SppmiFunction(dmc, 5000, 2000);
+        int delta = 5000;
+        int ldopCardinality = 2000;
+        SppmiFunction sf = new SppmiFunction(dmc, delta, ldopCardinality);
         File ldopsFolder = new File(projectFolder, "experiments/wordsim353/ldops");
         exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
         */
@@ -233,7 +235,13 @@ public class Wordsim353 extends DepExperiment{
         File ldopsFolder = new File(projectFolder, "experiments/wordsim353/ldops/done");
         exp.importMatrices(ldopsFolder, false);
         
-        
+        int ldopCardinality = 2000;
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/conll2015/innerProducts.txt");
+        InnerProductsCache ipc = new InnerProductsCache();
+        ipc.importFromFile(innerProductsFile);
+        ipc.setHyperParameter("dimensionality", "" + DepNeighbourhoodSpace.getDimensionality());
+        ipc.setHyperParameter("ldopcardinality", "" + ldopCardinality);
+
     }
     
 }

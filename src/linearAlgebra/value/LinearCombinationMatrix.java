@@ -3,6 +3,7 @@ package linearAlgebra.value;
 import experiment.TargetElements;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
+import innerProduct.InnerProductsCache;
 import java.util.TreeMap;
 import linearAlgebra.Matrix;
 import numberTypes.NNumber;
@@ -94,20 +95,21 @@ public class LinearCombinationMatrix extends Matrix {
     }
     
     //reduces inner product of linear combination matrices to linear combination of inner products of lexical matrices
-    public NNumber innerProduct(LinearCombinationMatrix given){
+    public NNumber innerProduct(LinearCombinationMatrix given, InnerProductsCache ipc){
         NNumber ip = null;
         
         for(int i=0; i<Vocabulary.getSize(); i++){
             NNumber weight1 = weights.getWeight(i);
             if(weight1 == null || weight1.isZero()) continue;
             //ValueMatrix m1 = (ValueMatrix) Vocabulary.getTargetWord(i).getRepresentation();
-            TargetWord tw1 = Vocabulary.getTargetWord(i);
+            //TargetWord tw1 = Vocabulary.getTargetWord(i);
             for(int j=0; j<Vocabulary.getSize(); j++){
                 NNumber weight2 = given.getWeight(j);
                 if(weight2 == null || weight2.isZero()) continue;
                 //ValueMatrix m2 = (ValueMatrix) Vocabulary.getTargetWord(j).getRepresentation();
-                TargetWord tw2 = Vocabulary.getTargetWord(j);
-                NNumber localIp = DepNeighbourhoodSpace.getFrobeniusInnerProduct(tw1.getWord(), tw2.getWord(), true);
+                //TargetWord tw2 = Vocabulary.getTargetWord(j);
+                //NNumber localIp = DepNeighbourhoodSpace.getFrobeniusInnerProduct(tw1.getWord(), tw2.getWord(), true);
+                NNumber localIp = ipc.getInnerProduct(i, j, true);
                 if(localIp == null || localIp.isZero()) continue;
                 NNumber weightedLocalIp = weight1.multiply(weight2).multiply(localIp);
                 if(ip == null){

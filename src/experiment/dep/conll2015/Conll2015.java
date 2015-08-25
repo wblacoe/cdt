@@ -5,6 +5,7 @@ import corpus.associationFunction.SppmiFunction;
 import corpus.dep.marginalizer.DepMarginalCounts;
 import experiment.Dataset;
 import experiment.dep.DepExperiment;
+import innerProduct.InnerProductsCache;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -61,7 +62,6 @@ public class Conll2015 extends DepExperiment {
         DepNeighbourhoodSpace.importFromFile(spaceFile);
         DepNeighbourhoodSpace.saveToFile(spaceFile);
         DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
-        DepNeighbourhoodSpace.setFrobeniusInnerProductsFile(new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/conll2015/innerProducts.txt"));
         
         //experiment
         Conll2015 exp = new Conll2015();
@@ -73,10 +73,18 @@ public class Conll2015 extends DepExperiment {
 		//associationate jdops to ldops
         File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
         DepMarginalCounts dmc = DepMarginalCounts.importFromFile(marginalCountsFile);
-        SppmiFunction sf = new SppmiFunction(dmc, 5000, 2000);
+        int delta = 5000;
+        int ldopCardinality = 2000;
+        SppmiFunction sf = new SppmiFunction(dmc, delta, ldopCardinality);
         File ldopsFolder = new File(projectFolder, "experiments/conll2015/ldops");
         exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
-                
+        
+        //use ldops for experiment
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/conll2015/innerProducts.txt");
+        InnerProductsCache ipc = new InnerProductsCache();
+        ipc.importFromFile(innerProductsFile);
+        ipc.setHyperParameter("dimensionality", "" + DepNeighbourhoodSpace.getDimensionality());
+        ipc.setHyperParameter("ldopcardinality", "" + ldopCardinality);
     }
     
 }

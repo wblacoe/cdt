@@ -1,7 +1,12 @@
 package featureExtraction.fromVector;
 
 import cdt.Helper;
+import corpus.dep.converter.DepTree;
+import experiment.AbstractInstance;
+import experiment.Dataset;
 import featureExtraction.AbstractFeatureVectorExtractor;
+import featureExtraction.FeatureVector;
+import featureExtraction.FeatureVectorsCollection;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -11,20 +16,31 @@ import java.util.HashMap;
 
 public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 
-	//private ArrayList<Integer> indices;
-	//private HashMap<Integer, Double[]> indexSentence1VectorMap;
-	//private HashMap<Integer, Double[]> indexSentence2VectorMap;
+	private ArrayList<Integer> indices;
+    private HashMap<Integer, Double[]> indexSentence1VectorMap;
+	private HashMap<Integer, Double[]> indexSentence2VectorMap;
 	
 	
 	public FeatureVectorExtractor(){
         super();
-		//indices = new ArrayList<Integer>();
-		//indexSentence1VectorMap = new HashMap<Integer, Double[]>();
-		//indexSentence2VectorMap = new HashMap<Integer, Double[]>();
+		indices = new ArrayList<Integer>();
+		indexSentence1VectorMap = new HashMap<Integer, Double[]>();
+		indexSentence2VectorMap = new HashMap<Integer, Double[]>();
 	}
+    
+    private Double innerProduct(Double[] v1, Double[] v2){
+        Double ip = 0.0;
+        
+        for(int i=0; i<v1.length; i++){
+            ip += v1[i] * v2[i];
+        }
+        
+        return ip;
+    }
 	
 	//features specified in the Kotlerman paper
-	private Double[] getKotlermanVector(Double[] v1, Double[] v2){
+	private FeatureVector getKotlermanFeatureVector(int index, Double[] v1, Double[] v2){
+		FeatureVector fv = new FeatureVector(index);
 		
 		double epsilon = 0.000001;
 		
@@ -43,32 +59,47 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 			denominator1 += v1[d];
 			denominator2 += v2[d];
 		}
+        
+        double sim12 = innerProduct(v1, v2);
+        double sim11 = innerProduct(v1, v1);
+        double sim22 = innerProduct(v2, v2);
+		double superFidelity12 = sim12 + Math.sqrt((1 - sim11) * (1 - sim22));
+		fv.setValue("sim11", sim11);
+		fv.setValue("sim22", sim22);
+		fv.setValue("sim12", sim12);
+		fv.setValue("sim12 * 2 / (sim11 + sim22)", sim12 * 2 / (sim11 + sim22));
+		fv.setValue("sim12 / sim11", sim12 / sim11);
+		fv.setValue("sim12 / sim22", sim12 / sim22);
+		fv.setValue("super fidelity", superFidelity12);
 		
+		fv.setValue("clarke0", clarkeNumerator);
+		fv.setValue("clarke1", clarkeNumerator / denominator1);
+		fv.setValue("clarke2", clarkeNumerator / denominator2);
+        fv.setValue("clarke3", clarkeNumerator / sim12);
+			
+		fv.setValue("lin0", linNumerator);
+		fv.setValue("lin", linNumerator / (denominator1 + denominator2));
+		fv.setValue("lin1", linNumerator / denominator1);
+		fv.setValue("lin2", linNumerator / denominator2);
+        fv.setValue("lin3", linNumerator / sim12);
+			
+		fv.setValue("weeds0", weedsNumerator);
+		fv.setValue("weeds", weedsNumerator / (denominator1 + denominator2));
+		fv.setValue("weeds1", weedsNumerator / denominator1);
+		fv.setValue("weeds2", weedsNumerator / denominator2);
+        fv.setValue("weeds3", weedsNumerator / sim12);
+			
+		fv.setValue("bal0", Math.sqrt(linNumerator * weedsNumerator));
+		fv.setValue("bal", Math.sqrt(linNumerator * weedsNumerator) / (denominator1 + denominator2));
+		fv.setValue("bal1", Math.sqrt(linNumerator * weedsNumerator) / denominator1);
+		fv.setValue("bal2", Math.sqrt(linNumerator * weedsNumerator) / denominator2);
+        fv.setValue("bal3", Math.sqrt(linNumerator * weedsNumerator) / sim12);
 		
-		return new Double[]{
-			clarkeNumerator,
-			clarkeNumerator / denominator1,
-			clarkeNumerator / denominator2,
-			
-			linNumerator,
-			linNumerator / (denominator1 + denominator2),
-			linNumerator / denominator1,
-			linNumerator / denominator2,
-			
-			weedsNumerator,
-			weedsNumerator / (denominator1 + denominator2),
-			weedsNumerator / denominator1,
-			weedsNumerator / denominator2,
-			
-			Math.sqrt(linNumerator * weedsNumerator),
-			Math.sqrt(linNumerator * weedsNumerator) / (denominator1 + denominator2),
-			Math.sqrt(linNumerator * weedsNumerator) / denominator1,
-			Math.sqrt(linNumerator * weedsNumerator) / denominator2
-		};
+        return fv;
 	}
 	
 	public void importVectors(File file){
-		Helper.report("[KotlermanVectors] Importing vectors from " + file.getAbsolutePath() + "...");
+		Helper.report("[FeatureVectorExtractor] Importing vectors from " + file.getAbsolutePath() + "...");
 		
 		int counter = 0;
 		try{
@@ -112,45 +143,36 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 			e.printStackTrace();
 		}
 		
-		Helper.report("[KotlermanVectors] ...Finished importing " + counter + " vectors from " + file.getAbsolutePath());
+		Helper.report("[FeatureVectorExtractor] ...Finished importing " + counter + " vectors from " + file.getAbsolutePath());
 	}
 	
-	public HashMap<Integer, Double[]> getFeatureVectors(){
-		HashMap<Integer, Double[]> indexFeatureVectorsMap = new HashMap<Integer, Double[]>();
-		
-		//go through all sentence pair indices
-		for(int index : indices){
-			Double[] sentence1Vector = indexSentence1VectorMap.get(index);
-			Double[] sentence2Vector = indexSentence2VectorMap.get(index);
-			DepTreePair depTreePair = (DepTreePair) dataset.get(index);
-			
-			//similarities among sentence vectors (6)
-			double sim11 = Operations.cosine(sentence1Vector, sentence1Vector);
-			double sim22 = Operations.cosine(sentence2Vector, sentence2Vector);
-			double sim12 = Operations.cosine(sentence1Vector, sentence2Vector);
-			Double[] similarityVector = new Double[]{
-				sim12 * 2 / (sim11 + sim22),
-				sim12 / sim11,
-				sim12 / sim22,
-				sim11,
-				sim22,
-				sim12,
-			};
-			//small features: sentence lengths, sentence overlaps (4)
-			Double[] superficialVector = getSuperficialVector(depTreePair);
-			//kotlerman features for sentence vectors (15)
-			Double[] kotlermanVector = getKotlermanVector(sentence1Vector, sentence2Vector);
-			
-			Double[] featureVector = Operations.concatenate(new Double[][]{
-				similarityVector,
-				superficialVector,
-				kotlermanVector,
-				new Double[]{ depTreePair.isEntailing() ? 1.0 : 0.0 }
-			});
-			indexFeatureVectorsMap.put(index, featureVector);
-		}
-		
-		return indexFeatureVectorsMap;
-	}
+    @Override
+    public FeatureVectorsCollection extract(Dataset dataset){
+        FeatureVectorsCollection fvc = new FeatureVectorsCollection();
+        
+        try{
+            for(Integer index : dataset.getIndicesSet()){
+                AbstractInstance instance = dataset.getInstance(index);
+                int instanceIndex = instance.getIndex();
+                FeatureVector fv = new FeatureVector(instanceIndex);
+
+                if(instance instanceof experiment.dep.conll2015.Instance){
+                    fv.setIndex(instanceIndex);
+                    Double[] sentence1Vector = indexSentence1VectorMap.get(instanceIndex);
+                    Double[] sentence2Vector = indexSentence2VectorMap.get(instanceIndex);
+                    fv.integrate(getKotlermanFeatureVector(instanceIndex, sentence1Vector, sentence2Vector));
+
+                }else if(instance instanceof experiment.dep.msrscc.Instance){
+                    //TODO
+                }
+
+                fvc.append(instanceIndex, fv);
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        
+        return fvc;
+    }
 
 }

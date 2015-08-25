@@ -1,6 +1,7 @@
 package featureExtraction;
 
 import experiment.Dataset;
+import innerProduct.InnerProductsCache;
 
 public class AbstractFeatureVectorExtractor {
 
@@ -10,18 +11,18 @@ public class AbstractFeatureVectorExtractor {
         
     }
     
-	public AbstractFeatureVectorExtractor(String[] extractorsAsStrings){
+	public AbstractFeatureVectorExtractor(String[] extractorsAsStrings, InnerProductsCache ipc){
         extractors = new AbstractFeatureVectorExtractor[extractorsAsStrings.length];
         for(int i=0; i<extractorsAsStrings.length; i++){
             switch(extractorsAsStrings[i]){
                 case "fromSentences" :
-                    extractors[i] = new featureExtraction.fromSentences.FeatureVectorExtractor();
+                    extractors[i] = new featureExtraction.fromSentences.FeatureVectorExtractor(ipc);
                     break;
                 case "fromVectors" :
                     extractors[i] = new featureExtraction.fromVector.FeatureVectorExtractor();
                     break;
                 case "fromDensityMatrices" :
-                    extractors[i] = new featureExtraction.fromDensityMatrices.FeatureVectorExtractor();
+                    extractors[i] = new featureExtraction.fromDensityMatrices.FeatureVectorExtractor(ipc);
                     break;
                 default :
                     extractors[i] = null;

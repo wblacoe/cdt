@@ -7,6 +7,7 @@ import experiment.Dataset;
 import featureExtraction.AbstractFeatureVectorExtractor;
 import featureExtraction.FeatureVector;
 import featureExtraction.FeatureVectorsCollection;
+import innerProduct.InnerProductsCache;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -15,17 +16,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import numberTypes.NNumber;
-import space.TensorSpace;
 
 public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 
     private String name;
     protected HashSet<String> negationWordSet;
+    private InnerProductsCache ipc;
 	
-	public FeatureVectorExtractor(){
+	public FeatureVectorExtractor(InnerProductsCache ipc){
         super();
         negationWordSet = new HashSet<>();
         importNegationWords(null); //TODO
+        this.ipc = ipc;
 	}
     
     //import negation words from negation words list file
@@ -144,10 +146,10 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 	}
     
     //this can be changed
-    public synchronized static double similarity(String word1, String word2){
-        NNumber ip11 = TensorSpace.getFrobeniusInnerProduct(word1, word1, true);
-        NNumber ip22 = TensorSpace.getFrobeniusInnerProduct(word2, word2, true);
-        NNumber ip12 = TensorSpace.getFrobeniusInnerProduct(word1, word2, true);
+    public double similarity(String word1, String word2){
+        NNumber ip11 = ipc.getInnerProduct(word1, word1, true);
+        NNumber ip22 = ipc.getInnerProduct(word2, word2, true);
+        NNumber ip12 = ipc.getInnerProduct(word1, word2, true);
         
         NNumber similarity = ip12.multiply(ip11.multiply(ip22).reciprocal());
         

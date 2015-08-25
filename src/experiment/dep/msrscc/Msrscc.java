@@ -5,6 +5,7 @@ import corpus.associationFunction.SppmiFunction;
 import corpus.dep.converter.DepTree;
 import corpus.dep.marginalizer.DepMarginalCounts;
 import experiment.dep.DepExperiment;
+import innerProduct.InnerProductsCache;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +76,6 @@ public class Msrscc extends DepExperiment {
         DepNeighbourhoodSpace.importFromFile(spaceFile);
         DepNeighbourhoodSpace.saveToFile(spaceFile);
         DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
-        DepNeighbourhoodSpace.setFrobeniusInnerProductsFile(new File(projectFolder, "innerProducts.txt"));
         
         //experiment
         Msrscc exp = new Msrscc();
@@ -87,9 +87,18 @@ public class Msrscc extends DepExperiment {
 		//associationate jdops to ldops
         File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
         DepMarginalCounts dmc = DepMarginalCounts.importFromFile(marginalCountsFile);
-        SppmiFunction sf = new SppmiFunction(dmc, 5000, 2000);
+        int delta = 5000;
+        int ldopCardinality = 2000;
+        SppmiFunction sf = new SppmiFunction(dmc, delta, ldopCardinality);
         File ldopsFolder = new File(projectFolder, "experiments/msrscc/ldops");
         exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
+        
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/conll2015/innerProducts.txt");
+        InnerProductsCache ipc = new InnerProductsCache();
+        ipc.importFromFile(innerProductsFile);
+        ipc.setHyperParameter("dimensionality", "" + DepNeighbourhoodSpace.getDimensionality());
+        ipc.setHyperParameter("ldopcardinality", "" + ldopCardinality);
+
                 
     }
     

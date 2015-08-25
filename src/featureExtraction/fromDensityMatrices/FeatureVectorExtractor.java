@@ -7,6 +7,7 @@ import experiment.Dataset;
 import featureExtraction.AbstractFeatureVectorExtractor;
 import featureExtraction.FeatureVector;
 import featureExtraction.FeatureVectorsCollection;
+import innerProduct.InnerProductsCache;
 import linearAlgebra.value.LinearCombinationMatrix;
 import linearAlgebra.value.ValueBaseMatrix;
 import linearAlgebra.value.ValueMatrix;
@@ -14,9 +15,10 @@ import linearAlgebra.value.ValueMatrix;
 public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 
 	protected String name;
+    protected InnerProductsCache ipc;
 
-	public FeatureVectorExtractor() {
-	
+	public FeatureVectorExtractor(InnerProductsCache ipc) {
+        this.ipc = ipc;
     }
 
     
@@ -34,7 +36,7 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 	private FeatureVector getKotlermanFeatureVector(int index, DepTree depTree1, DepTree depTree2){
 		FeatureVector fv = new FeatureVector(index);
 		
-        //get value matrix at root (already sorted by dimension)
+        //get value matrix at root (base matrices are sorted by dimension upon creating ValueMatrix)
         LinearCombinationMatrix l1 = (LinearCombinationMatrix) depTree1.getRootNode().getRepresentation();
         LinearCombinationMatrix l2 = (LinearCombinationMatrix) depTree2.getRootNode().getRepresentation();
 		ValueMatrix r1 = (l1).toValueMatrix();
@@ -48,9 +50,6 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 			Helper.report("[FeatureVectorExtractor] (" + name + ") Matrix #" + index + ".2 is NULL! Skipping data point #" + index + ".");
 			return null;
 		}
-        
-        //Arrays.sort(r1.getValueBaseMatrices());
-        //Arrays.sort(r2.getValueBaseMatrices());
         
         int i1 = 0, i2 = 0;
         ValueBaseMatrix bm1 = r1.getBaseMatrix(i1);
@@ -82,9 +81,9 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 		double sim11 = r1.times(r1).trace().getDoubleValue();
 		double sim22 = r2.times(r2).trace().getDoubleValue();
         */
-        double sim12 = l1.innerProduct(l2).getDoubleValue();
-        double sim11 = l1.innerProduct(l1).getDoubleValue();
-        double sim22 = l2.innerProduct(l2).getDoubleValue();
+        double sim12 = l1.innerProduct(l2, ipc).getDoubleValue();
+        double sim11 = l1.innerProduct(l1, ipc).getDoubleValue();
+        double sim22 = l2.innerProduct(l2, ipc).getDoubleValue();
 		double superFidelity12 = sim12 + Math.sqrt((1 - sim11) * (1 - sim22));
 		fv.setValue("sim11", sim11);
 		fv.setValue("sim22", sim22);
@@ -97,7 +96,7 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 		//features from Kotlerman
 		//Clarke (adapted)
 		//Double r1MinR2Trace = r1.min(r2).trace(); //this by itself is symmetric
-		fv.setValue("clarke", r1MinR2Trace);
+		fv.setValue("clarke0", r1MinR2Trace);
 		fv.setValue("clarke1", r1MinR2Trace / sim11);
 		fv.setValue("clarke2", r1MinR2Trace / sim22);
 		fv.setValue("clarke3", r1MinR2Trace / superFidelity12);
@@ -229,7 +228,7 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
                 FeatureVector fv = new FeatureVector(instanceIndex);
 
                 if(instance instanceof experiment.dep.conll2015.Instance){
-                    fv.setIndex(instance.getIndex());
+                    fv.setIndex(instanceIndex);
                     DepTree depTree1 = ((experiment.dep.conll2015.Instance) instance).arguments[0];
                     DepTree depTree2 = ((experiment.dep.conll2015.Instance) instance).arguments[1];
                     fv.integrate(getKotlermanFeatureVector(instanceIndex, depTree1, depTree2));

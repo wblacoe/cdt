@@ -2,11 +2,10 @@ package composition.dep;
 
 import cdt.Helper;
 import corpus.dep.converter.DepTree;
+import innerProduct.InnerProductsCache;
 import java.util.HashMap;
 import java.util.HashSet;
 import linearAlgebra.Matrix;
-import numberTypes.NNumber;
-import space.TensorSpace;
 
 /**
  *
@@ -16,9 +15,11 @@ public class Composor {
 
     private HashSet<Runnable> threads;
     private HashMap<Integer, Matrix> treeRepresentations;
+    private InnerProductsCache ipc;
     
-    public Composor(){
+    public Composor(InnerProductsCache ipc){
         threads = new HashSet<>();
+        this.ipc = ipc;
     }
     
     public synchronized HashMap<Integer, Matrix> composeTrees(HashMap<Integer, DepTree> depTrees){
@@ -37,7 +38,7 @@ public class Composor {
         
         //run composor threads
 		for(int i=0; i<amountOfCores; i++){
-			ComposorThread thread = new ComposorThread(allSubDatasets.get(i), TensorSpace.frobeniusInnerProducts);
+			ComposorThread thread = new ComposorThread(allSubDatasets.get(i), ipc.getCopy());
 			threads.add(thread);
 			(new Thread(thread)).start();
 		}
@@ -55,8 +56,8 @@ public class Composor {
         return treeRepresentations;
     }
     
-    public synchronized void reportComposorThreadDone(ComposorThread thread, HashMap<Integer, Matrix> treeRepresentations, HashMap<String, NNumber> localFrobeniusInnerProducts){
-        TensorSpace.frobeniusInnerProducts.putAll(localFrobeniusInnerProducts);
+    public synchronized void reportComposorThreadDone(ComposorThread thread, HashMap<Integer, Matrix> treeRepresentations, InnerProductsCache localIpc){
+        ipc.integrate(localIpc);
         threads.remove(thread);
         notify();
     }

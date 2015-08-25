@@ -5,10 +5,10 @@ import corpus.dep.converter.DepNode;
 import corpus.dep.converter.DepTree;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
+import innerProduct.InnerProductsCache;
 import java.util.HashMap;
 import linearAlgebra.Matrix;
 import linearAlgebra.value.LinearCombinationMatrix;
-import linearAlgebra.value.ValueMatrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
 import space.dep.DepRelationCluster;
@@ -22,16 +22,15 @@ public class ComposorThread implements Runnable {
     private Composor composor;
     private HashMap<Integer, DepTree> integerDepTreeMap;
     private HashMap<Integer, Matrix> treeRepresentations;
-    private HashMap<String, NNumber> frobeniusInnerProducts;
+    private InnerProductsCache ipc;
     
-    public ComposorThread(HashMap<Integer, DepTree> integerDepTreeMap, HashMap<String, NNumber> frobeniusInnerProducts){
+    public ComposorThread(HashMap<Integer, DepTree> integerDepTreeMap, InnerProductsCache ipc){
         this.integerDepTreeMap = integerDepTreeMap;
         treeRepresentations = new HashMap<>();
-        this.frobeniusInnerProducts = new HashMap<>();
-        this.frobeniusInnerProducts.putAll(frobeniusInnerProducts);
+        this.ipc = ipc;
     }
     
-    private NNumber lookUpFrobeniusInnerProduct(String word1, String word2){
+    /*private NNumber lookUpFrobeniusInnerProduct(String word1, String word2){
         String key = word1.compareTo(word2) <= 0 ? word1 + "\t" + word2 : word2 + "\t" + word1;
         return frobeniusInnerProducts.get(key);
     }
@@ -62,6 +61,18 @@ public class ComposorThread implements Runnable {
         
         return similarity;
     }
+    */
+    
+    private NNumber similarity(int twIndex1, int twIndex2){
+        NNumber ip12 = ipc.getInnerProduct(twIndex1, twIndex2, true);
+        NNumber ip11 = ipc.getInnerProduct(twIndex1, twIndex1, true);
+        NNumber ip22 = ipc.getInnerProduct(twIndex2, twIndex2, true);
+        
+        NNumber similarity = ip12.multiply(ip11.multiply(ip22).reciprocal());
+        
+        return similarity;
+    }
+
     
     private LinearCombinationMatrix applyContext(DepNode headNode, DepRelationCluster drc, DepNode dependentNode){
         
@@ -81,8 +92,9 @@ public class ComposorThread implements Runnable {
         for(int i=0; i<partialTraceVector.getLength(); i++){
             NNumber weight = partialTraceVector.getWeight(i);
             if(weight != null && !weight.isZero()){
-                TargetWord alternateHead = Vocabulary.getTargetWord(i);
-                NNumber similarity = similarity(head, alternateHead);
+                //TargetWord alternateHead = Vocabulary.getTargetWord(i);
+                //NNumber similarity = similarity(head, alternateHead);
+                NNumber similarity = similarity(headTargetWordIndex, i);
                 if(similarity != null && !similarity.isZero()){
                     weightedSimilaritiesVector.setWeight(i, weight.multiply(similarity));
                 }
@@ -133,7 +145,7 @@ public class ComposorThread implements Runnable {
     @Override
 	public void run() {
 		composeTrees();
-		composor.reportComposorThreadDone(this, treeRepresentations, frobeniusInnerProducts);
+		composor.reportComposorThreadDone(this, treeRepresentations, ipc);
 	}
 
 }
