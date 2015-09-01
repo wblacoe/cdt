@@ -19,15 +19,16 @@ import numberTypes.NNumber;
 
 public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 
-    private String name;
     protected HashSet<String> negationWordSet;
     private InnerProductsCache ipc;
+	private ArrayList<String> featureList;
 	
-	public FeatureVectorExtractor(InnerProductsCache ipc){
-        super();
+	public FeatureVectorExtractor(InnerProductsCache ipc, ArrayList<String> featureList){
+        name = "fromSentences";
         negationWordSet = new HashSet<>();
         importNegationWords(null); //TODO
         this.ipc = ipc;
+		this.featureList = featureList;
 	}
     
     //import negation words from negation words list file

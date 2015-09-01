@@ -159,8 +159,7 @@ public class DepRelationCluster extends Mode {
     }
 
 
-    @Override
-    public String toString(){
+    public String toStringDetailed(){
         String s = "mode #" + getModeIndex() + " \"" + getName() + "\"\n";
         
         if(!depRelationStrings.isEmpty()){
@@ -177,6 +176,11 @@ public class DepRelationCluster extends Mode {
             }
         }
         return s + "...\n";
+    }
+    
+    @Override
+    public String toString(){
+        return name;
     }
     
 }

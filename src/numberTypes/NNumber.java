@@ -17,17 +17,16 @@ public class NNumber implements Comparable {
 	public static final int LOG_RATIONAL = 7;
 	public static final int RATIONAL = 8;
 	
-	/*public static NNumber zero(){
-		switch(Helper.getNumberType()){
-			case COMPLEX : return new NComplex();
-			case CUSTOM_BASE_FLOAT : return new NCustomBaseFloat();
-			case FLOAT : return new NFloat();
-			case LOG_FLOAT : return new NLogFloat();
-			case RATIONAL : return new NRational();
+	public static NNumber zero(){
+		switch(TensorSpace.getNumberType()){
+			case COMPLEX : return new NComplex(0);
+			case CUSTOM_BASE_FLOAT : return new NCustomBaseFloat(0);
+			case FLOAT : return new NFloat(0);
+			case LOG_FLOAT : return new NLogFloat(0);
+			case RATIONAL : return new NRational(0);
 			default : return null;
 		}
 	}
-    */
 	
 	public static NNumber one(){
 		switch(TensorSpace.getNumberType()){
@@ -71,7 +70,7 @@ public class NNumber implements Comparable {
 		}
 	}
     public static NNumber createDimensionalitySqrtToThePowerOf(int e){
-        	switch(TensorSpace.getNumberType()){
+		switch(TensorSpace.getNumberType()){
 			case CUSTOM_BASE_FLOAT : return new NCustomBaseFloat(true, 1.0f, e);
 			default : return create(Math.pow(TensorSpace.getDimensionalitySqrt(), e));
 		}
@@ -133,8 +132,23 @@ public class NNumber implements Comparable {
             return invert();
         }
     }
+	public NNumber min(NNumber n){
+		return null;
+	}
+	public NNumber max(NNumber n){
+		return null;
+	}
+	public NNumber getCopy(){
+		return null;
+	}
 	public double getDoubleValue(){
 		return Double.NaN;
+	}
+	public boolean isInfinite(){
+		return false;
+	}
+	public boolean isNaN(){
+		return false;
 	}
     
     /*public static NNumber min(NNumber n1, NNumber n2){

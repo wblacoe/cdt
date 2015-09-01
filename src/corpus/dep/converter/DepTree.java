@@ -128,7 +128,6 @@ public class DepTree {
 	public Long createFromFileReader(BufferedReader in) throws IOException{
 		return createFromFileReader(in, 0L, "</s>");
 	}
-
 	
 	public boolean isEmpty(){
 		return wordInSentenceNumberDepNodeMap.isEmpty();
@@ -182,7 +181,10 @@ public class DepTree {
 		s += "\n";
 		
 		//dep nodes (lists of their dep arcs)
-		for(int i=1; i<=this.getSize(); i++) s += i + ":" + wordInSentenceNumberDepNodeMap.get(i) + "\n";
+		//for(int i=1; i<=this.getSize(); i++) s += i + ":" + wordInSentenceNumberDepNodeMap.get(i) + "\n";
+        for(Integer i : wordInSentenceNumberDepNodeMap.keySet()){
+            s += i + ": " + wordInSentenceNumberDepNodeMap.get(i) + "\n";
+        }
 		
 		return s;
 	}
@@ -228,7 +230,7 @@ public class DepTree {
     
     public static DepTree importFromReader(BufferedReader in, String endOfSentenceMarker) throws IOException{
 
-        boolean regardOnlyNeighboursInVocabulary = true;
+        boolean regardOnlyNeighboursInVocabulary = false;
         DepTree depTree = new DepTree(regardOnlyNeighboursInVocabulary);
         
         //import all dependency nodes

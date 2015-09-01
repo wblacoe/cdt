@@ -1,7 +1,6 @@
-package featureExtraction.fromVector;
+package featureExtraction.fromVectors;
 
 import cdt.Helper;
-import corpus.dep.converter.DepTree;
 import experiment.AbstractInstance;
 import experiment.Dataset;
 import featureExtraction.AbstractFeatureVectorExtractor;
@@ -19,13 +18,14 @@ public class FeatureVectorExtractor extends AbstractFeatureVectorExtractor {
 	private ArrayList<Integer> indices;
     private HashMap<Integer, Double[]> indexSentence1VectorMap;
 	private HashMap<Integer, Double[]> indexSentence2VectorMap;
+	private ArrayList<String> featureList;
 	
-	
-	public FeatureVectorExtractor(){
-        super();
+	public FeatureVectorExtractor(ArrayList<String> featureList){
+        name = "fromVectors";
 		indices = new ArrayList<Integer>();
 		indexSentence1VectorMap = new HashMap<Integer, Double[]>();
 		indexSentence2VectorMap = new HashMap<Integer, Double[]>();
+		this.featureList = featureList;
 	}
     
     private Double innerProduct(Double[] v1, Double[] v2){

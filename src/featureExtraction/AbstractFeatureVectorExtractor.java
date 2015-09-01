@@ -1,28 +1,35 @@
 package featureExtraction;
 
+import cdt.Helper;
 import experiment.Dataset;
 import innerProduct.InnerProductsCache;
+import java.util.ArrayList;
 
 public class AbstractFeatureVectorExtractor {
 
+	protected String name;
     private AbstractFeatureVectorExtractor[] extractors;
     
-    public AbstractFeatureVectorExtractor(){
-        
+    protected AbstractFeatureVectorExtractor(){
+        name = "abstract";
     }
+	
+	public String getName(){
+		return name;
+	}
     
-	public AbstractFeatureVectorExtractor(String[] extractorsAsStrings, InnerProductsCache ipc){
-        extractors = new AbstractFeatureVectorExtractor[extractorsAsStrings.length];
-        for(int i=0; i<extractorsAsStrings.length; i++){
-            switch(extractorsAsStrings[i]){
+	public AbstractFeatureVectorExtractor(String[] namesOfExtractors, InnerProductsCache ipc, ArrayList<String> featureList){
+        extractors = new AbstractFeatureVectorExtractor[namesOfExtractors.length];
+        for(int i=0; i<namesOfExtractors.length; i++){
+            switch(namesOfExtractors[i]){
                 case "fromSentences" :
-                    extractors[i] = new featureExtraction.fromSentences.FeatureVectorExtractor(ipc);
+                    extractors[i] = new featureExtraction.fromSentences.FeatureVectorExtractor(ipc, featureList);
                     break;
                 case "fromVectors" :
-                    extractors[i] = new featureExtraction.fromVector.FeatureVectorExtractor();
+                    extractors[i] = new featureExtraction.fromVectors.FeatureVectorExtractor(featureList);
                     break;
                 case "fromDensityMatrices" :
-                    extractors[i] = new featureExtraction.fromDensityMatrices.FeatureVectorExtractor(ipc);
+                    extractors[i] = new featureExtraction.fromDensityMatrices.FeatureVectorExtractor(ipc, featureList);
                     break;
                 default :
                     extractors[i] = null;
@@ -36,8 +43,11 @@ public class AbstractFeatureVectorExtractor {
         try{
             //let each extractor extract feature vectors collection, and collect in one collection
             for(int i=0; i<extractors.length; i++){
-                FeatureVectorsCollection fvc = extractors[i].extract(dataset);
+				AbstractFeatureVectorExtractor extractor = extractors[i];
+				Helper.report("[FeatureVectorExtractor] Extracting features using extractor \"" + extractor.getName() + "\"...");
+                FeatureVectorsCollection fvc = extractor.extract(dataset);
                 totalFvc.integrate(fvc);
+				Helper.report("[FeatureVectorExtractor] ...Finished extracting features using extractor \"" + extractor.getName() + "\"");
             }
         }catch(Exception e){
             e.printStackTrace();

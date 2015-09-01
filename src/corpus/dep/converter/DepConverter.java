@@ -5,7 +5,7 @@ import corpus.Corpus;
 import experiment.TargetElements;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
-import io.MatrixExporter;
+import io.VocabularyMatrixExporter;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -80,7 +80,7 @@ public class DepConverter {
 		for(String word : localTargetWordJointCountsMatrixMap.keySet()){
 			//CountMatrix jdop = targetWordJointCountsMatrixMap.get(word);
             TargetWord tw = Vocabulary.getTargetWord(word);
-            CountMatrix jdop = (CountMatrix) tw.getRepresentation();
+            CountMatrix jdop = (CountMatrix) tw.getLexicalRepresentation();
             if(jdop == null){
                 jdop = new CountMatrix();
                 jdop.setName(word);
@@ -88,7 +88,7 @@ public class DepConverter {
             //int existingCard = jdop.getCardinality();
             CountMatrix newJdop = localTargetWordJointCountsMatrixMap.get(word);
             jdop.add(newJdop);
-            tw.setRepresentation(jdop);
+            tw.setLexicalRepresentation(jdop);
             //System.out.println("word: " + word + ", existing counts card: " + existingCard + ", new counts card: " + newJdop.getCardinality() + " sum counts card: " + jdop.getCardinality()); //DEBUG
 			//jdop.reduceCardinality(space.getIntegerParameter("jdopscard"));
 		}
@@ -113,7 +113,7 @@ public class DepConverter {
         DepConverter dc = new DepConverter(null);
         dc.extractJointCountsFromCorpus();
         
-        MatrixExporter me = new MatrixExporter();
+        VocabularyMatrixExporter me = new VocabularyMatrixExporter();
         me.exportMatricesToFiles(new File(projectFolder1, "experiments/wordsim353/ldops"), 8);
         
     }

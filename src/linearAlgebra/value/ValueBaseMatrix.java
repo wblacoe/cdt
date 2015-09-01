@@ -130,6 +130,15 @@ public class ValueBaseMatrix extends BaseMatrix {
             
         }
     }
+	
+	public int compareIgnoreValue(ValueBaseMatrix bm){
+        int compareLeftBaseTensors = leftBaseTensor.compareTo(bm.getLeftBaseTensor());
+        if(compareLeftBaseTensors != 0){
+            return compareLeftBaseTensors;
+        }else{
+            return rightBaseTensor.compareTo(bm.getRightBaseTensor());
+        }
+	}
     
 	@Override
 	public boolean equals(Object o){

@@ -25,7 +25,8 @@ import space.TensorSpace;
  */
 public class DepNeighbourhoodSpace extends TensorSpace {
     
-    protected static final Pattern depNeighbourhoodSpacePattern = Pattern.compile("<space name=\\\"(.*?)\\\" order=\\\"(.*?)\\\" dimensionality=\\\"(.*?)\\\" corpusformat=\\\"(.*?)\\\" corpusfolder=\\\"(.*?)\\\" contextcountsfile=\\\"(.*?)\\\" datasetwordsfile=\\\"(.*?)\\\">");
+    //protected static final Pattern depNeighbourhoodSpacePattern = Pattern.compile("<space name=\\\"(.*?)\\\" order=\\\"(.*?)\\\" dimensionality=\\\"(.*?)\\\" corpusformat=\\\"(.*?)\\\" corpusfolder=\\\"(.*?)\\\" contextcountsfile=\\\"(.*?)\\\" datasetwordsfile=\\\"(.*?)\\\">");
+    protected static final Pattern hyperParameterPattern = Pattern.compile("(.*?)=\\\"(.*?)\\\"");
     
     private static final HashSet<String> stoplist = new HashSet<>();
     private static final HashMap<String, DepRelationCluster> depRelationStringDepRelationClusterMap = new HashMap<>();
@@ -156,49 +157,76 @@ public class DepNeighbourhoodSpace extends TensorSpace {
 		return stoplist;
 	}
     
+    private static void importHyperParameters(BufferedReader in) throws IOException{
+        String line;
+        while((line = in.readLine()) != null){
+            if(line.equals("</hyperparameters>")) break;
+            
+            Matcher matcher = hyperParameterPattern.matcher(line);
+            if(matcher.find()){
+                String key = matcher.group(1);
+                String valueString = matcher.group(2);
+
+                switch(key){
+                    case "name":
+                        setName(valueString);
+                        break;
+                    case "order":
+                        setOrder(Integer.parseInt(valueString));
+                        break;
+                    case "dimensionality":
+                        setDimensionality(Integer.parseInt(valueString));
+                        break;
+                    case "corpusformat":
+                        Corpus.setFormat(valueString);
+                        break;
+                    case "corpusfolder":
+                        Corpus.setFolderName(valueString);
+                        break;
+                    case "contextcountsfile":
+                        contextCountsFilename = valueString;
+                        break;
+                    case "datasetwordsfile":
+                        datasetWordsFilename = valueString;
+                        break;
+                }
+            }else{
+                Helper.report("[DepNeighbourhoodSpace] Could not parse hyperparameter line \"" + line + "\"...");
+            }
+        }
+    }
+    
     public static void importFromReader(BufferedReader in) throws IOException{
         Helper.report("[DepNeighbourhoodSpace] Importing space...");
 
-        String line = in.readLine();
-        Matcher matcher = depNeighbourhoodSpacePattern.matcher(line);
-        if(matcher.find()){
+        String line;
+        while((line = in.readLine()) != null){    
             
-            //DEBUG
-            //for(int i=0; i<=matcher.groupCount(); i++) System.out.println("" + i + ": " + matcher.group(i));
-            
-            setName(matcher.group(1));
-            setOrder(Integer.parseInt(matcher.group(2)));
-            setDimensionality(Integer.parseInt(matcher.group(3)));
-            Corpus.setFormat(matcher.group(4));
-            Corpus.setFolderName(matcher.group(5));
-            contextCountsFilename = matcher.group(6);
-            datasetWordsFilename = matcher.group(7);
-            while((line = in.readLine()) != null){
-                if(line.startsWith("<vocabulary")){
-                    Vocabulary.importFromReader(in, line); //static
-                }else if(line.startsWith("<mode")){
-                    DepRelationCluster drc = DepRelationCluster.importFromReader(in, line);
-                    //save drc
-                    setDepRelation(drc.getModeIndex(), drc);
-                    //make drc findable under all dep relation strings it consists of
-                    for(String depRelationString : drc.getDepRelationStrings()){
-                        depRelationStringDepRelationClusterMap.put(depRelationString, drc);
-                    }
-                }else if(line.equals("</space>")){
-                    break;
+            if(line.startsWith("<hyperparameters")){
+                importHyperParameters(in);
+            }else if(line.startsWith("<vocabulary")){
+                Vocabulary.importFromReader(in, line); //static
+            }else if(line.startsWith("<mode")){
+                DepRelationCluster drc = DepRelationCluster.importFromReader(in, line);
+                //save drc
+                setDepRelation(drc.getModeIndex(), drc);
+                //make drc findable under all dep relation strings it consists of
+                for(String depRelationString : drc.getDepRelationStrings()){
+                    depRelationStringDepRelationClusterMap.put(depRelationString, drc);
                 }
+            }else if(line.equals("</space>")){
+                break;
             }
             
-            
-            //make sure all modes have dimension objects
-            ensureDimensionObjects(new File(getProjectFolder(), contextCountsFilename));
-
-            //make sure vocabulary is deinfed
-            ensureVocabulary(new File(getProjectFolder(), datasetWordsFilename));
-            
-        }else{
-            Helper.report("[DepNeighbourhoodSpace] Space file has wrong format.");
         }
+
+
+        //make sure all modes have dimension objects
+        ensureDimensionObjects(new File(getProjectFolder(), contextCountsFilename));
+
+        //make sure vocabulary is deinfed
+        ensureVocabulary(new File(getProjectFolder(), datasetWordsFilename));
+
         
         Helper.report("[DepNeighbourhoodSpace] Finished importing space with " + Vocabulary.getSize() + " target words.");
     }
@@ -221,7 +249,12 @@ public class DepNeighbourhoodSpace extends TensorSpace {
     }
     
     public static void saveToWriter(BufferedWriter out) throws IOException{
-        out.write("<space name=\"" + getName() + "\" order=\"" + getOrder() + "\" dimensionality=\"" + getDimensionality() + "\" corpusformat=\"" + Corpus.getFormat() + "\" corpusfolder=\"" + Corpus.getFolderName() + "\" contextcountsfile=\"" + contextCountsFilename + "\" datasetwordsfile=\"" + datasetWordsFilename + "\">\n");
+        //out.write("<space name=\"" + getName() + "\" order=\"" + getOrder() + "\" dimensionality=\"" + getDimensionality() + "\" corpusformat=\"" + Corpus.getFormat() + "\" corpusfolder=\"" + Corpus.getFolderName() + "\" contextcountsfile=\"" + contextCountsFilename + "\" datasetwordsfile=\"" + datasetWordsFilename + "\">\n");
+        out.write("<space>\n");
+        
+        //hyperparamters
+        out.write("<hyperparameters>\nname=\"" + getName() + "\"\norder=\"" + getOrder() + "\"\ndimensionality=\"" + getDimensionality() + "\"\ncorpusformat=\"" + Corpus.getFormat() + "\"\ncorpusfolder=\"" + Corpus.getFolderName() + "\"\ncontextcountsfile=\"" + contextCountsFilename + "\"\ndatasetwordsfile=\"" + datasetWordsFilename + "\"\n</hyperparameters>\n");
+        
         Vocabulary.saveToWriter(out);
         for(int m=1; m<=getOrder(); m++){
             getDepRelationCluster(m).saveToWriter(out);

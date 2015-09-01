@@ -2,7 +2,7 @@ package corpus.dep.converter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import linearAlgebra.Matrix;
+import linearAlgebra.value.LinearCombinationMatrix;
 import space.dep.DepNeighbourhoodSpace;
 import space.dep.DepRelationCluster;
 
@@ -20,7 +20,7 @@ public class DepNode {
 	//when extracting joint counts from the corpus use neighbourNumbers as keys (we only care about neighbours in the vocabulary)
 	//when processing dep trees in datasets use the actual neighbourWord (we care about all neighbours)
 	protected HashSet<DepArc> neighbourArcSet;
-	protected Matrix representation;
+	protected LinearCombinationMatrix representation;
 	protected boolean isRoot;
 	
 	//save all heads distributions that make up this node's representation. the keys are the dependent nodes which the heads distributions came from
@@ -71,10 +71,10 @@ public class DepNode {
 		return true;
 	}
 	
-	public void setRepresentation(Matrix r){
+	public void setRepresentation(LinearCombinationMatrix r){
         representation = r;
     }
-    public Matrix getRepresentation(){
+    public LinearCombinationMatrix getRepresentation(){
         return representation;
     }
     
@@ -223,7 +223,7 @@ public class DepNode {
 
 	@Override
 	public String toString(){
-		String s = word + " <";
+		String s = "" + wordInSentenceNumber + ": " + word + " <";
 		/*for(Object neighbour : neighbourSubSpaceMap.keySet()){
 			DepNode neighbourNode = (DepNode) neighbour;
 			SubSpace drc = neighbourSubSpaceMap.get(neighbour);
@@ -231,7 +231,12 @@ public class DepNode {
 		}
 		*/
 		for(DepArc neighbourArc : neighbourArcSet){
-			if(neighbourArc.drc.isFromHeadToDependent()) s += neighbourArc.drc + ":" + neighbourArc.neighbourNode.getWord() + ", ";
+			//if(neighbourArc.drc.isFromHeadToDependent()) s += neighbourArc.drc + ":" + neighbourArc.neighbourNode.getWord() + ", ";
+            boolean a = neighbourArc.drc.isFromHeadToDependent();
+            if(a){
+                s += neighbourArc.drc + ":";
+                s += neighbourArc.neighbourNode.getWord() + ", ";
+            }
 		}
 		return s + ">";
 	}

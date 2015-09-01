@@ -26,7 +26,7 @@ public class NNumberVector {
     
     public void add(NNumberVector v){
         NNumber[] givenArray = v.getArray();
-        for(int i=0; i<Vocabulary.getSize(); i++){
+        for(int i=0; i<array.length; i++){
             NNumber thisWeight = array[i];
             NNumber givenWeight = givenArray[i];
             if(thisWeight == null){
@@ -44,11 +44,20 @@ public class NNumberVector {
     public void add(int index, NNumber weight){
         NNumber existingWeight = array[index];
         if(existingWeight == null){
-            existingWeight = weight;
+            array[index] = weight;
         }else{
             array[index] = existingWeight.add(weight);
         }
     }
+	
+	public void multiply(NNumber scalar){
+		for(int i=0; i<array.length; i++){
+			NNumber weight = array[i];
+			if(weight != null && !weight.isZero()){
+				array[i] = weight.multiply(scalar);
+			}
+		}
+	}
 
     public void setWeight(int index, NNumber weight){
         array[index] = weight;
@@ -63,6 +72,34 @@ public class NNumberVector {
             if(array[i] != null && !array[i].isZero()) return false;
         }
         return true;
+    }
+	
+	public NNumberVector concatenate(NNumberVector v){
+		int thisLength = getLength();
+		NNumberVector c = new NNumberVector(thisLength+ v.getLength());
+		
+		for(int i=0; i<thisLength; i++){
+			c.setWeight(i, array[i]);
+		}
+		for(int i=0; i<v.getLength(); i++){
+			c.setWeight(thisLength + i, v.getWeight(i));
+		}
+		
+		return c;
+	}
+    
+    @Override
+    public String toString(){
+        String s = "[";
+        
+        for(int i=0; i<array.length; i++){
+            NNumber weight = array[i];
+            if(weight != null && !weight.isZero()){
+                s += Vocabulary.getTargetWord(i).getWord() + ": " + weight/*.getDoubleValue()*/ + ", ";
+            }
+        }
+        
+        return s + "]";
     }
     
 }

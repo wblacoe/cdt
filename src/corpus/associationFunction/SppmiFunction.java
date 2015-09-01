@@ -42,8 +42,8 @@ public class SppmiFunction extends AssociationFunction {
 
     @Override
     public Matrix compute(CountMatrix jointCountsDop, String targetWord){
-        if(targetWord == null /*|| targetWord.getRepresentation() == null*/){
-            System.out.println("a");
+        if(targetWord == null){
+            //System.out.println("a"); //DEBUG
             return null;
         }else{
             
@@ -51,7 +51,7 @@ public class SppmiFunction extends AssociationFunction {
             Long targetWordCount = dmc.getTargetWordCount(targetWord/*.getWord()*/);
             //if no, save an empty ldop, and move on to the next target word
             if(targetWordCount == null){
-                System.out.println("b");
+                //System.out.println("b"); //DEBUG
                 return null;
             }else{
 
@@ -146,7 +146,7 @@ public class SppmiFunction extends AssociationFunction {
                 sppmiMatrix.normalize(); //divide by trace
                 //targetWord.setRepresentation(sppmiMatrix);
                 
-                System.out.println("c");
+                //System.out.println("c"); //DEBUG
                 return sppmiMatrix;
                 
                 //System.out.println("[SppmiFunction] ...Finished computing pmi Ldop for \"" + targetWord + "\"...");
@@ -162,8 +162,8 @@ public class SppmiFunction extends AssociationFunction {
 		int counter = 0;
 		for(int i=0; i<TargetElements.getSize(); i++){
             TargetWord targetWord = Vocabulary.getTargetWord(i);
-            ValueMatrix sppmiMatrix = (ValueMatrix) compute((CountMatrix) targetWord.getRepresentation(), targetWord.getWord());
-            targetWord.setRepresentation(sppmiMatrix);
+            ValueMatrix sppmiMatrix = (ValueMatrix) compute((CountMatrix) targetWord.getLexicalRepresentation(), targetWord.getWord());
+            targetWord.setLexicalRepresentation(sppmiMatrix);
             counter++;
         }
 		

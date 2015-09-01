@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import linearAlgebra.count.CountMatrix;
+import linearAlgebra.value.LinearCombinationMatrix;
 import linearAlgebra.value.ValueMatrix;
 
 public class Matrix {
@@ -15,7 +16,7 @@ public class Matrix {
     protected String name;
     
     public Matrix(){
-        
+        name = "?";
     }
     
     public void setName(String name){
@@ -51,8 +52,10 @@ public class Matrix {
                     }else if(matrixType.equals("value")){
                         int cardinality = Integer.parseInt(matcher.group(3));
                         m = ValueMatrix.importFromReader(in, cardinality);
-                    }
-                    m.setName(matrixName);
+                    }else if(matrixType.equals("linearcombination")){
+						m = LinearCombinationMatrix.importFromReader(in);
+					}
+                    if(m != null) m.setName(matrixName);
                     //System.out.println(line + ", name: " + matcher.group(1) + ", card: " + matcher.group(3) + ", type: " + matcher.group(2)); //DEBUG
                     break;
                 }

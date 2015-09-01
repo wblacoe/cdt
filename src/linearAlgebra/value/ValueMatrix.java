@@ -233,11 +233,11 @@ public class ValueMatrix extends Matrix {
     
     //<m1, m2> = Tr(m1*m2^T)
     public NNumber innerProduct(ValueMatrix m){
-        if(TensorSpace.getSpeedOfValueMatrixInnerProduct() == Helper.QUICK){
-            return innerProductQuick(m);
-        }else{
+        //if(TensorSpace.getSpeedOfValueMatrixInnerProduct() == Helper.QUICK){
+            //return innerProductQuick(m);
+        //}else{
             return innerProductSlow(m);
-        }
+        //}
     }
 
     public ValueTensor times(ValueTensor t){
@@ -776,6 +776,7 @@ public class ValueMatrix extends Matrix {
         return inv;
     }
     
+    //modeIndex is in [1;order]
     //returns a vector which is the diagonal of the (first-order) matrix which results from tracing out all modes except the one with given mode index 
     public NNumberVector getPartialTraceVector(int modeIndex){
 
@@ -783,7 +784,7 @@ public class ValueMatrix extends Matrix {
         if(partialTraceVectors == null) partialTraceVectors = new NNumberVector[DepNeighbourhoodSpace.getOrder()];
 
         //if this partial trace vector has been computed before
-        if(partialTraceVectors[modeIndex] != null) return partialTraceVectors[modeIndex];
+        if(partialTraceVectors[modeIndex - 1] != null) return partialTraceVectors[modeIndex - 1];
         
         //start a new partial trace vector
         NNumberVector partialTraceVector = new NNumberVector(TargetElements.getSize());
@@ -803,7 +804,7 @@ public class ValueMatrix extends Matrix {
         }
         
         //save partial trace vector for later
-        partialTraceVectors[modeIndex] = partialTraceVector;
+        partialTraceVectors[modeIndex - 1] = partialTraceVector;
         
         return partialTraceVector;
     }

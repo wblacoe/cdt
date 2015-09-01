@@ -2,21 +2,20 @@ package io;
 
 import cdt.Helper;
 import experiment.dep.TargetWord;
-import experiment.dep.Vocabulary;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import linearAlgebra.Matrix;
 
-public class MatrixExporterThread implements Runnable {
+public class VocabularyMatrixExporterThread implements Runnable {
 
-	private MatrixExporter exporter;
+	private VocabularyMatrixExporter exporter;
 	private String name;
 	private HashSet<TargetWord> targetWordSet;
 	private File outputFile;
 	
-	public MatrixExporterThread(MatrixExporter exporter, HashSet<TargetWord> targetWordSet, File outputFile){
+	public VocabularyMatrixExporterThread(VocabularyMatrixExporter exporter, HashSet<TargetWord> targetWordSet, File outputFile){
 		this.exporter = exporter;
 		this.name = outputFile.getName();
 		this.outputFile = outputFile;
@@ -40,7 +39,7 @@ public class MatrixExporterThread implements Runnable {
 			
 			//for(Matrix m : matrixSet){
             for(TargetWord tw : targetWordSet){
-                Matrix m = tw.getRepresentation();
+                Matrix m = tw.getLexicalRepresentation();
                 if(m == null) continue; //don't export useless matrices
                 m.saveToWriter(out);
 				//success = m.saveToWriter(out);

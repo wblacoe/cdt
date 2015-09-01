@@ -212,6 +212,16 @@ public class FeatureVectorsCollection {
 		Helper.report("[FeatureVectorsCollection] ...Finished importing " + this.getSize() + " feature vectors of length " + this.getAmountOfFeatures());
 	}
 	
+	public void filter(Collection<Integer> indicesToKeep){
+		ArrayList<Integer> toRemove = new ArrayList<>();
+		for(Integer index : indexFeatureVectorMap.navigableKeySet()){
+			if(!indicesToKeep.contains(index)) toRemove.add(index);
+		}
+		for(Integer index : toRemove){
+			indexFeatureVectorMap.remove(index);
+		}
+	}
+	
 	public void exportToFile(File featureVectorsFile){
 		Helper.report("[FeatureVectorsCollection] Exporting feature vectors to \"" + featureVectorsFile.getAbsolutePath() + "...");
 

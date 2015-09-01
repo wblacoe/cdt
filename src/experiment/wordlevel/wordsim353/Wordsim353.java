@@ -69,8 +69,8 @@ public class Wordsim353 extends DepExperiment{
         if(existingSimilarity != null){
             return existingSimilarity;
         }else{
-            ValueMatrix m1 = (ValueMatrix) tw1.getRepresentation();
-            ValueMatrix m2 = (ValueMatrix) tw2.getRepresentation();
+            ValueMatrix m1 = (ValueMatrix) tw1.getLexicalRepresentation();
+            ValueMatrix m2 = (ValueMatrix) tw2.getLexicalRepresentation();
             NNumber similarity = m1.times(m2).trace();
             similarityCache.put(key, similarity);
             return similarity;
@@ -82,17 +82,17 @@ public class Wordsim353 extends DepExperiment{
         //prepare
         for(int i=0; i<Vocabulary.getSize(); i++){
             TargetWord tw1 = Vocabulary.getTargetWord(i);
-            if(tw1 == null || !tw1.hasRepresentation()) continue;
+            if(tw1 == null || !tw1.hasLexicalRepresentation()) continue;
             System.out.println("<" + tw1.getWord() + ", " + tw1.getWord() + "> = " + getSimilarity(tw1, tw1));
         }
         
         //print
         for(int i=0; i<Vocabulary.getSize(); i++){
             TargetWord tw1 = Vocabulary.getTargetWord(i);
-            if(tw1 == null || !tw1.hasRepresentation()) continue;
+            if(tw1 == null || !tw1.hasLexicalRepresentation()) continue;
             for(int j=0; j<Vocabulary.getSize(); j++){
                 TargetWord tw2 = Vocabulary.getTargetWord(j);
-                if(tw2 == null || !tw2.hasRepresentation()) continue;
+                if(tw2 == null || !tw2.hasLexicalRepresentation()) continue;
                 NNumber selfSimilarity1 = getSimilarity(tw1, tw1);
                 NNumber selfSimilarity2 = getSimilarity(tw2, tw2);
                 System.out.println("sim(" + tw1.getWord() + ", " + tw2.getWord() + ") = " + getSimilarity(tw1, tw2).divide(selfSimilarity1.multiply(selfSimilarity2).sqrt()));
@@ -123,9 +123,9 @@ public class Wordsim353 extends DepExperiment{
         //printSimilarities();
         
         //need, equip, basketball
-        ValueMatrix mNeed = (ValueMatrix) Vocabulary.getTargetWord("need").getRepresentation();
-        ValueMatrix mEquip = (ValueMatrix) Vocabulary.getTargetWord("equip").getRepresentation();
-        ValueMatrix mBasketball = (ValueMatrix) Vocabulary.getTargetWord("basketball").getRepresentation();
+        ValueMatrix mNeed = (ValueMatrix) Vocabulary.getTargetWord("need").getLexicalRepresentation();
+        ValueMatrix mEquip = (ValueMatrix) Vocabulary.getTargetWord("equip").getLexicalRepresentation();
+        ValueMatrix mBasketball = (ValueMatrix) Vocabulary.getTargetWord("basketball").getLexicalRepresentation();
         
         System.out.println("need: " + mNeed.sumOfAllEntries());
         System.out.println("equip: " + mEquip.sumOfAllEntries());

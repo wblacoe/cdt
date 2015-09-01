@@ -6,8 +6,8 @@ import corpus.dep.converter.DepConverter;
 import corpus.dep.marginalizer.DepMarginalCounts;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
-import io.MatrixExporter;
-import io.MatrixImporter;
+import io.VocabularyMatrixExporter;
+import io.VocabularyMatrixImporter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -50,7 +50,7 @@ public class Experiment {
     public void extractAndSaveJointCountsFromCorpus(File outputFolder, String prefix, int amountOfOutputFiles, HashSet<String> targetWords){
         DepConverter dc = new DepConverter(targetWords);
         dc.extractJointCountsFromCorpus();
-        MatrixExporter me = new MatrixExporter();
+        VocabularyMatrixExporter me = new VocabularyMatrixExporter();
         me.exportMatricesToFiles(outputFolder, prefix, amountOfOutputFiles);
     }
     public void extractAndSaveJointCountsFromCorpus(File outputFolder, String prefix, int amountOfOutputFiles){
@@ -82,6 +82,7 @@ public class Experiment {
         }
     }
     
+	//TODO count and report successes and other conditions
     public void importAssociationateAndSaveMatrices(File jdopsFolder, DepMarginalCounts dmc, AssociationFunction af, File ldopsFolder){
 		File[] jdopsFiles = jdopsFolder.listFiles();
         for(File jdopsFile : jdopsFiles){
@@ -98,7 +99,7 @@ public class Experiment {
                     CountMatrix cm = (CountMatrix) m;
                     ValueMatrix vm = (ValueMatrix) af.compute(cm, m.getName());
                     if(vm == null){
-                        System.out.println("d");
+                        //System.out.println("d"); //DEBUG
                     }else{
                         vm.saveToWriter(out);
                     }
@@ -116,17 +117,18 @@ public class Experiment {
     }
     
     public void importMatrices(File folder, boolean normalize){
-        MatrixImporter mi = new MatrixImporter(normalize);
+        VocabularyMatrixImporter mi = new VocabularyMatrixImporter(normalize);
         mi.importMatricesFromFiles(folder.listFiles());
     }
     
-    public void importMatricesApplyAssociationFunctionAndSaveMatrices(File inputFolder, AssociationFunction af, boolean normalize, File outputFolder){
+    /*public void importMatricesApplyAssociationFunctionAndSaveMatrices(File inputFolder, AssociationFunction af, boolean normalize, File outputFolder){
         MatrixImporter mi = new MatrixImporter(normalize);
         mi.importMatricesApplyAssociationFunctionAndSaveMatrices(inputFolder.listFiles(), af, outputFolder);
     }
+    */
     
     public void saveMatrices(File outputFolder){
-        MatrixExporter me = new MatrixExporter();
+        VocabularyMatrixExporter me = new VocabularyMatrixExporter();
         me.exportMatricesToFiles(outputFolder, 8);
     }
 

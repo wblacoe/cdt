@@ -5,6 +5,7 @@ import java.io.IOException;
 import experiment.TargetElement;
 import java.io.BufferedWriter;
 import linearAlgebra.Matrix;
+import linearAlgebra.value.LinearCombinationMatrix;
 
 /**
  *
@@ -13,14 +14,13 @@ import linearAlgebra.Matrix;
 public class TargetWord extends TargetElement {
     
     private String word;
-    //private int marginalCount;
-    private Matrix representation;
+    private Matrix lexicalRepresentation, compositionalRepresentation;
     
     public TargetWord(int index){
         super(index);
         word = null;
-        //marginalCount = -1;
-        representation = null;
+        lexicalRepresentation = null;
+        compositionalRepresentation = null;
     }
     public TargetWord(int index, String word){
         super(index);
@@ -42,17 +42,25 @@ public class TargetWord extends TargetElement {
     }
     */
     
-    public void setRepresentation(Matrix representation){
-        this.representation = representation;
+    public void setLexicalRepresentation(Matrix m){
+        this.lexicalRepresentation = m;
     }
-    public Matrix getRepresentation(){
-        return representation;
+    public Matrix getLexicalRepresentation(){
+        return lexicalRepresentation;
     }
-    public boolean hasRepresentation(){
-        return representation != null;
+    public boolean hasLexicalRepresentation(){
+        return lexicalRepresentation != null;
     }
-    public void removeRepresentation(){
-        setRepresentation(null);
+    public void removeLexicalRepresentation(){
+        setLexicalRepresentation(null);
+    }
+    
+    public void setCompositionalRepresentation(Matrix m){
+        this.compositionalRepresentation = m;
+    }
+    
+    public Matrix getCompositionalRepresentation(){
+        return compositionalRepresentation;
     }
     
     public void importFromString(String s){

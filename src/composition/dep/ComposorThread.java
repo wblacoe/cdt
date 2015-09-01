@@ -1,5 +1,6 @@
 package composition.dep;
 
+import cdt.Helper;
 import corpus.dep.converter.DepArc;
 import corpus.dep.converter.DepNode;
 import corpus.dep.converter.DepTree;
@@ -7,7 +8,6 @@ import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
 import innerProduct.InnerProductsCache;
 import java.util.HashMap;
-import linearAlgebra.Matrix;
 import linearAlgebra.value.LinearCombinationMatrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
@@ -19,126 +19,164 @@ import space.dep.DepRelationCluster;
  */
 public class ComposorThread implements Runnable {
 
+    private String name;
     private Composor composor;
-    private HashMap<Integer, DepTree> integerDepTreeMap;
-    private HashMap<Integer, Matrix> treeRepresentations;
+    private HashMap<String, DepTree> indexDepTreeMap;
+    private HashMap<String, LinearCombinationMatrix> treeRepresentations;
     private InnerProductsCache ipc;
     
-    public ComposorThread(HashMap<Integer, DepTree> integerDepTreeMap, InnerProductsCache ipc){
-        this.integerDepTreeMap = integerDepTreeMap;
+    public ComposorThread(String name, Composor composor, HashMap<String, DepTree> indexDepTreeMap, InnerProductsCache ipc){
+        this.name = name;
+        this.composor = composor;
+        this.indexDepTreeMap = indexDepTreeMap;
         treeRepresentations = new HashMap<>();
         this.ipc = ipc;
     }
     
-    /*private NNumber lookUpFrobeniusInnerProduct(String word1, String word2){
-        String key = word1.compareTo(word2) <= 0 ? word1 + "\t" + word2 : word2 + "\t" + word1;
-        return frobeniusInnerProducts.get(key);
+    /*public ComposorThread(String name, Composor composor, String key, DepTree depTree, InnerProductsCache ipc){
+        this.name = name;
+        this.composor = composor;
+        integerDepTreeMap = new HashMap<>();
+        integerDepTreeMap.put(key, depTree);
+        treeRepresentations = new HashMap<>();
+        this.ipc = ipc;
     }
-    
-    private NNumber getFrobeniusInnerProduct(TargetWord tw1, TargetWord tw2){
-        String word1 = tw1.getWord();
-        String word2 = tw2.getWord();
-        NNumber ip = lookUpFrobeniusInnerProduct(tw1.getWord(), tw2.getWord());
-        if(ip == null){
-            ValueMatrix m1 = (ValueMatrix) tw1.getRepresentation();
-            ValueMatrix m2 = (ValueMatrix) tw2.getRepresentation();
-            ip = m1.innerProduct(m2);
-            //save for future use
-            String key = word1.compareTo(word2) <= 0 ? word1 + "\t" + word2 : word2 + "\t" + word1;
-            frobeniusInnerProducts.put(key, ip);
-        }
-        
-        return ip;
-    }
-    
-    //this can be changed
-    private NNumber similarity(TargetWord tw1, TargetWord tw2){
-        NNumber ip11 = getFrobeniusInnerProduct(tw1, tw1);
-        NNumber ip12 = getFrobeniusInnerProduct(tw2, tw2);
-        NNumber ip22 = getFrobeniusInnerProduct(tw1, tw2);
-        
-        NNumber similarity = ip12.multiply(ip11.multiply(ip22).reciprocal());
-        
-        return similarity;
-    }
-    */
+	*/
+	
+	public String getName(){
+		return name;
+	}
     
     private NNumber similarity(int twIndex1, int twIndex2){
-        NNumber ip12 = ipc.getInnerProduct(twIndex1, twIndex2, true);
-        NNumber ip11 = ipc.getInnerProduct(twIndex1, twIndex1, true);
-        NNumber ip22 = ipc.getInnerProduct(twIndex2, twIndex2, true);
+        //NNumber ip12 = ipc.getInnerProduct(twIndex1, twIndex2, true);
+        NNumber ip12 = ipc.getInnerProduct(Vocabulary.getTargetWord(twIndex1).getWord(), Vocabulary.getTargetWord(twIndex2).getWord(), true);
+        if(ip12 == null) return null;
+        //NNumber ip11 = ipc.getInnerProduct(twIndex1, twIndex1, true);
+        NNumber ip11 = ipc.getInnerProduct(Vocabulary.getTargetWord(twIndex1).getWord(), Vocabulary.getTargetWord(twIndex1).getWord(), true);
+        if(ip11 == null) return null;
+        //NNumber ip22 = ipc.getInnerProduct(twIndex2, twIndex2, true);
+        NNumber ip22 = ipc.getInnerProduct(Vocabulary.getTargetWord(twIndex2).getWord(), Vocabulary.getTargetWord(twIndex2).getWord(), true);
+        if(ip22 == null) return null;
         
-        NNumber similarity = ip12.multiply(ip11.multiply(ip22).reciprocal());
-        
+        NNumber similarity = ip12.multiply(ip11.multiply(ip22).sqrt().reciprocal());
         return similarity;
     }
 
     
-    private LinearCombinationMatrix applyContext(DepNode headNode, DepRelationCluster drc, DepNode dependentNode){
+    private LinearCombinationMatrix applyContext(DepNode headNode, DepRelationCluster drc, LinearCombinationMatrix dependentRepresentation, boolean headHasLexicalRepresentation){
+        
+        //System.out.println("head has repr = " + headHasLexicalRepresentation); //DEBUG
         
         //start the dop to be returned by adding 1 at the head's target word index
         TargetWord head = Vocabulary.getTargetWord(headNode.getWord());
         int headTargetWordIndex = head.getIndex();
-        LinearCombinationMatrix dop = new LinearCombinationMatrix();
-        dop.setWeight(headTargetWordIndex, NNumber.one());
         
-        //get the dependent's partial trace vector
-        TargetWord dependent = Vocabulary.getTargetWord(dependentNode.getWord());
-        LinearCombinationMatrix dependentRepresentation = (LinearCombinationMatrix) dependent.getRepresentation();
         NNumberVector partialTraceVector = dependentRepresentation.getPartialTraceVector(drc.getModeIndex());
-        
+        //System.out.println("part(" + " " + dependentRepresentation + ") = " + partialTraceVector); //DEBUG
+
         //multiply the weights for alternative heads by their similarities with given head
         NNumberVector weightedSimilaritiesVector = new NNumberVector(partialTraceVector.getLength());
-        for(int i=0; i<partialTraceVector.getLength(); i++){
-            NNumber weight = partialTraceVector.getWeight(i);
-            if(weight != null && !weight.isZero()){
-                //TargetWord alternateHead = Vocabulary.getTargetWord(i);
-                //NNumber similarity = similarity(head, alternateHead);
-                NNumber similarity = similarity(headTargetWordIndex, i);
-                if(similarity != null && !similarity.isZero()){
-                    weightedSimilaritiesVector.setWeight(i, weight.multiply(similarity));
+        
+        //if there is a head representation, multiply weights by similarities
+        if(headHasLexicalRepresentation){
+            //String s = "similarities: "; //DEBUG
+            for(int i=0; i<partialTraceVector.getLength(); i++){
+                NNumber weight = partialTraceVector.getWeight(i);
+                if(weight != null && !weight.isZero()){
+                    NNumber similarity = similarity(headTargetWordIndex, i);
+                    if(similarity != null && !similarity.isZero()){
+                        //s += "sim(" + headNode.getWord() + ", " + Vocabulary.getTargetWord(i).getWord() + ") = " + similarity + " "; //DEBUG
+                        weightedSimilaritiesVector.setWeight(i, weight.multiply(similarity));
+                    }
                 }
             }
+            //System.out.println(s); //DEBUG
         }
-        
-        //create a matrix from the weights-similarities vector
-        dop.add(new LinearCombinationMatrix(weightedSimilaritiesVector));
+
+        //otherwise use weights not multiplied by similarities (because head representation is replaced by identity matrix)
+        LinearCombinationMatrix dop = new LinearCombinationMatrix(weightedSimilaritiesVector);
+        dop.setName(headNode.getWord() + "-" + dependentRepresentation.getName());
         
         return dop;
     }
 
-    private LinearCombinationMatrix getRepresentation(DepNode node){
+    private LinearCombinationMatrix getRepresentation(String index, DepNode node){
         
-        //if given node is a leaf
-        if(node.isLeaf()){
-            //return a linear combination matrix with one 1 and 0's otherwise
-            LinearCombinationMatrix ldop = new LinearCombinationMatrix();
-            int targetWordIndex = Vocabulary.getTargetWordIndex(node.getWord());
-            ldop.setWeight(targetWordIndex, NNumber.one());
-            return ldop;
-            
-        //if given node has at least one dependent
+        TargetWord tw = Vocabulary.getTargetWord(node.getWord());
+        LinearCombinationMatrix dop;
+        boolean nodeHasLexicalRepresentation;
+
+        //check that the ldop exists and is non-zero
+        if(tw.hasLexicalRepresentation() && !tw.getLexicalRepresentation().isZero()){
+            //return a one hot linear combination matrix
+            int targetWordIndex = tw.getIndex();
+            dop = new LinearCombinationMatrix();
+            dop.setName(tw.getWord());
+            dop.setWeight(targetWordIndex, NNumber.one());
+            nodeHasLexicalRepresentation = true;
         }else{
-            LinearCombinationMatrix dop = new LinearCombinationMatrix();
+            dop = null;
+            nodeHasLexicalRepresentation = false;
+        }
+
+        //if given node has at least one dependent
+        if(!node.isLeaf()){
+            //go through all dependents
             for(DepArc depArc : node.getNeighbourArcSet()){
                 if(depArc.drc.isFromHeadToDependent()){
-                    dop.add(applyContext(node, depArc.drc, depArc.neighbourNode));
+                    DepNode dependentNode = depArc.neighbourNode;
+                    LinearCombinationMatrix dependentNodeRepresentation = getRepresentation(index, dependentNode);
+                    //only process dependent that have a representation
+                    if(dependentNodeRepresentation != null && !dependentNodeRepresentation.isZero()){
+                        LinearCombinationMatrix ac = applyContext(node, depArc.drc, dependentNodeRepresentation, nodeHasLexicalRepresentation);
+                        if(dop == null){
+                            dop = ac;
+                        }else if(ac != null){
+                            //String s = dop + " + ac(" + dependentNode.getWord() + ") " + ac;
+                            dop.add(ac);
+                            //System.out.println(s + " = " + dop); //DEBUG
+                            //Helper.report("[ComposorThread] (" + name + ") #" + index + " composing <" + node.getWord() + ", " + depArc.drc.getName() + ", " + dependentNode.getWord() + ">");
+                        }
+                    }
                 }
             }
-            dop.normalize(true);
-            return dop;
+            if(dop != null && !dop.isZero()) dop.normalize(true);
         }
-        
+
+		node.setRepresentation(dop);
+        //Helper.report("[ComposorThread] (" + name + ") #" + delme + " repr(" + node.getWord() + ") = " + dop); //DEBUG
+        return dop;
     }
     
-    private LinearCombinationMatrix getRepresentation(DepTree depTree){
-        return getRepresentation(depTree.getRootNode());
+    private LinearCombinationMatrix getRepresentation(String index, DepTree depTree){
+        return getRepresentation(index, depTree.getRootNode());
     }
     
     public void composeTrees(){
-        for(Integer index : integerDepTreeMap.keySet()){
-            LinearCombinationMatrix treeRepresentation = getRepresentation(integerDepTreeMap.get(index));
-            treeRepresentations.put(index, treeRepresentation);
+		LinearCombinationMatrix m;
+        for(String index : indexDepTreeMap.keySet()){
+			//save root node representation
+            //LinearCombinationMatrix treeRepresentation = getRepresentation(index, integerDepTreeMap.get(index));
+            //treeRepresentation.setName(index);
+            //treeRepresentations.put(index, treeRepresentation);
+			
+			//save root and sub-root nodes' representations
+			getRepresentation(index, indexDepTreeMap.get(index));
+			DepTree depTree = indexDepTreeMap.get(index);
+			m = depTree.getRootNode().getRepresentation();
+			m.setName(index);
+			treeRepresentations.put(index, m);
+			int i=0;
+			for(DepNode dependent : depTree.getRootNode().getDependents()){
+				m = dependent.getRepresentation();
+				if(m != null && !m.isZero()){
+					m.setName(index + "." + i);
+					treeRepresentations.put(index + "." + i, m);
+					i++;
+				}
+			}
+			
+			Helper.report("[ComposorThread] (" + name + ") ...Finished composing sentence #" + index);
         }
     }
 

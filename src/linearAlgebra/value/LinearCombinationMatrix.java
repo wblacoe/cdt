@@ -4,11 +4,14 @@ import experiment.TargetElements;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
 import innerProduct.InnerProductsCache;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import linearAlgebra.Matrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
-import space.dep.DepNeighbourhoodSpace;
 
 /**
  * expresses linear combination of subordinate matrices.
@@ -52,9 +55,9 @@ public class LinearCombinationMatrix extends Matrix {
         
         for(int i=0; i<weights.getLength(); i++){
             NNumber weight = weights.getWeight(i);
-            if(weight != null){
+            if(weight != null && !weight.isZero()){
                 TargetWord tw = Vocabulary.getTargetWord(i);
-                NNumberVector twPartialTraceVector = ((ValueMatrix) tw.getRepresentation()).getPartialTraceVector(modeIndex);
+                NNumberVector twPartialTraceVector = ((ValueMatrix) tw.getLexicalRepresentation()).getPartialTraceVector(modeIndex);
                 partialTraceVector.add(twPartialTraceVector);
             }
         }
@@ -68,30 +71,33 @@ public class LinearCombinationMatrix extends Matrix {
     }
     
     public NNumber getTrace(boolean assumeLdopsAreNormalized){
-        NNumber trace = NNumber.create(0);
+        NNumber trace = null;
         for(int i=0; i<weights.getLength(); i++){
             NNumber weight = weights.getWeight(i);
             if(weight == null || weight.isZero()) continue;
             
             if(assumeLdopsAreNormalized){
-                trace.add(weight);
+                trace = (trace == null ? weight : trace.add(weight));
             }else{
                 TargetWord tw = Vocabulary.getTargetWord(i);
-                NNumber twTrace = ((ValueMatrix) tw.getRepresentation()).trace();
-                trace.add(twTrace.multiply(weight));
+                NNumber twTrace = ((ValueMatrix) tw.getLexicalRepresentation()).trace();
+                trace = (trace == null ? twTrace.multiply(weight) : trace.add(twTrace.multiply(weight)));
             }
         }
         return trace;
     }
     
     public void normalize(boolean assumeLdopsAreNormalized){
-        NNumber oneOverTrace = getTrace(assumeLdopsAreNormalized).reciprocal();
-        for(int i=0; i<weights.getLength(); i++){
-            NNumber weight = weights.getWeight(i);
-            if(weight != null && !weight.isZero()){
-                weights.setWeight(i, weight.multiply(oneOverTrace));
-            }
-        }
+		NNumber trace = getTrace(assumeLdopsAreNormalized);
+		if(trace != null && !trace.isZero()){
+			NNumber oneOverTrace = trace.reciprocal();
+			for(int i=0; i<weights.getLength(); i++){
+				NNumber weight = weights.getWeight(i);
+				if(weight != null && !weight.isZero()){
+					weights.setWeight(i, weight.multiply(oneOverTrace));
+				}
+			}
+		}
     }
     
     //reduces inner product of linear combination matrices to linear combination of inner products of lexical matrices
@@ -101,15 +107,13 @@ public class LinearCombinationMatrix extends Matrix {
         for(int i=0; i<Vocabulary.getSize(); i++){
             NNumber weight1 = weights.getWeight(i);
             if(weight1 == null || weight1.isZero()) continue;
-            //ValueMatrix m1 = (ValueMatrix) Vocabulary.getTargetWord(i).getRepresentation();
-            //TargetWord tw1 = Vocabulary.getTargetWord(i);
+            TargetWord tw1 = Vocabulary.getTargetWord(i);
             for(int j=0; j<Vocabulary.getSize(); j++){
                 NNumber weight2 = given.getWeight(j);
                 if(weight2 == null || weight2.isZero()) continue;
-                //ValueMatrix m2 = (ValueMatrix) Vocabulary.getTargetWord(j).getRepresentation();
-                //TargetWord tw2 = Vocabulary.getTargetWord(j);
-                //NNumber localIp = DepNeighbourhoodSpace.getFrobeniusInnerProduct(tw1.getWord(), tw2.getWord(), true);
-                NNumber localIp = ipc.getInnerProduct(i, j, true);
+                TargetWord tw2 = Vocabulary.getTargetWord(j);
+                //NNumber localIp = ipc.getInnerProduct(i, j, true);
+                NNumber localIp = ipc.getInnerProduct(tw1.getWord(), tw2.getWord(), true);
                 if(localIp == null || localIp.isZero()) continue;
                 NNumber weightedLocalIp = weight1.multiply(weight2).multiply(localIp);
                 if(ip == null){
@@ -130,34 +134,80 @@ public class LinearCombinationMatrix extends Matrix {
     public ValueMatrix toValueMatrix(){
         TreeMap<ValueBaseMatrix, ValueBaseMatrix> collection = new TreeMap<>();
         
-        for(int i=1; i<=Vocabulary.getSize(); i++){
+        for(int i=0; i<Vocabulary.getSize(); i++){
             NNumber weight = weights.getWeight(i);
-            if(weight == null || weight.isZero()) continue;
-            
-            TargetWord tw = Vocabulary.getTargetWord(i);
-            ValueMatrix twMatrix = (ValueMatrix) tw.getRepresentation();
-            for(int j=0; j<twMatrix.getAmountOfNonNullBaseMatrices(); j++){
-                ValueBaseMatrix bm = twMatrix.getBaseMatrix(j);
-                ValueBaseMatrix existingBm = collection.remove(bm);
-                if(existingBm == null){
-                    collection.put(bm, bm);
-                }else{
-                    ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), existingBm.getValue().add(bm.getValue()));
-                    collection.put(newBm, newBm);
-                }
-            }
+            if(weight != null && !weight.isZero()){
+				TargetWord tw = Vocabulary.getTargetWord(i);
+				ValueMatrix twMatrix = (ValueMatrix) tw.getLexicalRepresentation();
+				for(int j=0; j<twMatrix.getAmountOfNonNullBaseMatrices(); j++){
+					//System.out.println("toValueMatrix i=" + i + ", j=" + j); //DEBUG
+					ValueBaseMatrix bm = twMatrix.getBaseMatrix(j);
+					ValueBaseMatrix existingBm = collection.remove(bm);
+					if(existingBm == null){
+						ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), bm.getValue().multiply(weight));
+						collection.put(newBm, newBm);
+					}else{
+						ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), existingBm.getValue().add(bm.getValue().multiply(weight)));
+						collection.put(newBm, newBm);
+					}
+				}
+			}
         }
         
         ValueMatrix m = new ValueMatrix(collection.size());
         int i=0;
-        while(true){
-            ValueBaseMatrix bm = collection.pollFirstEntry().getValue();
+        /*while(true){
+			Entry<ValueBaseMatrix, ValueBaseMatrix> entry = collection.pollFirstEntry();
+			if(entry == null) continue;
+            ValueBaseMatrix bm = entry.getValue();
             if(bm == null) break;
             m.setBaseMatrix(i, bm);
             i++;
         }
+		*/
+		for(ValueBaseMatrix bm : collection.keySet()){
+			if(bm != null){
+				m.setBaseMatrix(i, bm);
+				i++;
+			}
+		}
         
         return m;
     }
+
+    @Override
+    public String toString(){
+        return name + " " + weights.toString();
+    }
+ 
+    @Override
+    public void saveToWriter(BufferedWriter out) throws IOException{
+        out.write("<matrix name=\"" + getName() + "\" type=\"linearcombination\" cardinality=\"\">\n");
+        for(int i=0; i<Vocabulary.getSize(); i++){
+            NNumber weight = getWeight(i);
+            if(weight != null && !weight.isZero()){
+                //s += Vocabulary.getTargetWord(i).getWord() + ": " + weight/*.getDoubleValue()*/ + ", ";
+                out.write(i + "\t" + weight.getDoubleValue() + "\n");
+            }
+        }
+        out.write("</matrix>\n");
+    }
     
+    public static LinearCombinationMatrix importFromReader(BufferedReader in) throws IOException{
+        LinearCombinationMatrix m = new LinearCombinationMatrix();
+        
+        String line;
+        while((line = in.readLine()) != null){
+            if(line.equals("</matrix>")) break;
+            
+            String[] entries = line.split("\t");
+            int twIndex = Integer.parseInt(entries[0]);
+            NNumber weight = NNumber.create(Double.parseDouble(entries[1]));
+            
+            m.setWeight(twIndex, weight);
+        }
+
+        return m;
+    }
+
 }

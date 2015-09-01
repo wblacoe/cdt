@@ -3,8 +3,8 @@ package corpus.associationFunction;
 import cdt.Helper;
 import corpus.dep.marginalizer.DepMarginalCounts;
 import experiment.dep.TargetWord;
-import io.MatrixExporter;
-import io.MatrixImporter;
+import io.VocabularyMatrixExporter;
+import io.VocabularyMatrixImporter;
 import java.io.File;
 import linearAlgebra.Matrix;
 import linearAlgebra.count.CountMatrix;
@@ -35,14 +35,14 @@ public class AssociationFunction {
         DepNeighbourhoodSpace.importFromFile(inFile);
         DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
 
-        MatrixImporter mi = new MatrixImporter(false);
+        VocabularyMatrixImporter mi = new VocabularyMatrixImporter(false);
         mi.importMatricesFromFiles(new File(projectFolder1, "experiments/wordsim353/jdops.tiny").listFiles());
         
         DepMarginalCounts dmc = DepMarginalCounts.importFromFile(new File(projectFolder1, "preprocessed/ukwac.depParsed/marginalcounts.gz"));
         AssociationFunction af = new SppmiFunction(dmc, 5000, 1000);
         af.compute();
         
-        MatrixExporter me = new MatrixExporter();
+        VocabularyMatrixExporter me = new VocabularyMatrixExporter();
         me.exportMatricesToFiles(new File(projectFolder1, "experiments/wordsim353/ldops.tiny"), 1);
     }
     

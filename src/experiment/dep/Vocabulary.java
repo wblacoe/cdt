@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import linearAlgebra.value.LinearCombinationMatrix;
+import numberTypes.NNumber;
 
 /**
  * Contains target words, index starts with 0
@@ -60,7 +62,15 @@ public class Vocabulary extends TargetElements {
     
     public static void removeAllRepresentations(){
         for(int i=0; i<getSize(); i++){
-            getTargetWord(i).removeRepresentation();
+            getTargetWord(i).removeLexicalRepresentation();
+        }
+    }
+    
+    public static void createOneHotLinearCombinationMatricesForAllTargetWords(){
+        for(int i=0; i<getSize(); i++){
+            LinearCombinationMatrix m = new LinearCombinationMatrix();
+            m.setWeight(i, NNumber.one());
+            getTargetWord(i).setCompositionalRepresentation(m);
         }
     }
 

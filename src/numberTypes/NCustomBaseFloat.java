@@ -89,7 +89,7 @@ public class NCustomBaseFloat extends NNumber {
     public boolean isNegative(){
         return !isPositive;
     }
-    
+	
     //if both numbers have the same exponent add them, otherwise ignore the number with the smaller exponent
     public NNumber addQuick(NNumber n) {
         NCustomBaseFloat r = (NCustomBaseFloat) n;
@@ -220,8 +220,6 @@ public class NCustomBaseFloat extends NNumber {
 		return new NCustomBaseFloat(isPositive, factor, exponent + e);
 	}
     */
-
-    
     
 	@Override
 	public NNumber invert(){
@@ -230,7 +228,9 @@ public class NCustomBaseFloat extends NNumber {
     
     @Override
     public NNumber reciprocal(){
-        return new NCustomBaseFloat(isPositive, 1/factor, -exponent);
+        NCustomBaseFloat n = new NCustomBaseFloat(isPositive, 1/factor, -exponent);
+		n.carry();
+		return n;
     }
 
     @Override
@@ -255,7 +255,87 @@ public class NCustomBaseFloat extends NNumber {
             return invert();
         }
     }
-    
+	
+	@Override
+	public NNumber min(NNumber n){
+		if(isPositive){
+			if(n.isPositive()){
+				if(exponent < ((NCustomBaseFloat) n).getExponent()){
+					return getCopy();
+				}else if(exponent > ((NCustomBaseFloat) n).getExponent()){
+					return n.getCopy();
+				}else{
+					if(factor < ((NCustomBaseFloat) n).getFactor()){
+						return getCopy();
+					}else{
+						return n.getCopy();
+					}
+				}
+			}else{
+				return n.getCopy();
+			}
+		}else{
+			if(n.isPositive()){
+				return getCopy();
+			}else{
+				if(exponent < ((NCustomBaseFloat) n).getExponent()){
+					return n.getCopy();
+				}else if(exponent > ((NCustomBaseFloat) n).getExponent()){
+					return getCopy();
+				}else{
+					if(factor < ((NCustomBaseFloat) n).getFactor()){
+						return n.getCopy();
+					}else{
+						return getCopy();
+					}
+				}
+			}
+		}
+	}
+
+	@Override
+	public NNumber max(NNumber n){
+		if(isPositive){
+			if(n.isPositive()){
+				if(exponent < ((NCustomBaseFloat) n).getExponent()){
+					return n.getCopy();
+				}else if(exponent > ((NCustomBaseFloat) n).getExponent()){
+					return getCopy();
+				}else{
+					if(factor < ((NCustomBaseFloat) n).getFactor()){
+						return n.getCopy();
+					}else{
+						return getCopy();
+					}
+				}
+			}else{
+				return getCopy();
+			}
+		}else{
+			if(n.isPositive()){
+				return n.getCopy();
+			}else{
+				if(exponent < ((NCustomBaseFloat) n).getExponent()){
+					return getCopy();
+				}else if(exponent > ((NCustomBaseFloat) n).getExponent()){
+					return n.getCopy();
+				}else{
+					if(factor < ((NCustomBaseFloat) n).getFactor()){
+						return getCopy();
+					}else{
+						return n.getCopy();
+					}
+				}
+			}
+		}
+	}
+	
+	@Override
+	public NNumber getCopy(){
+		NCustomBaseFloat n = new NCustomBaseFloat(isPositive, factor, exponent);
+		return n;
+	}
+	
 	@Override
 	public double getDoubleValue(){
         if(isZero()){
@@ -269,6 +349,16 @@ public class NCustomBaseFloat extends NNumber {
             }
         }
 	}
+	
+	@Override
+	public boolean isInfinite(){
+		return Float.isInfinite(factor) || Float.isInfinite(exponent);
+	}
+	
+	@Override
+	public boolean isNaN(){
+		return Float.isNaN(factor) || Float.isNaN(exponent);
+	}
     
     @Override
     public int compareTo(Object o){
@@ -280,9 +370,9 @@ public class NCustomBaseFloat extends NNumber {
             return 0;
             
         //compare signs
-        }else if((isPositive || isZero()) && (!n.isPositive() || isZero())){
+        }else if((isPositive() || isZero()) && (n.isNegative() || n.isZero())){
             return 1;
-        }else if((!isPositive || isZero()) && (n.isPositive() || isZero())){
+        }else if((isNegative() || isZero()) && (n.isPositive() || n.isZero())){
             return -1;
         
         //compare exponents
