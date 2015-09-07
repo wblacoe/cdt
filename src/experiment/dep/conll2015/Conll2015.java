@@ -140,7 +140,7 @@ public class Conll2015 extends DepExperiment {
 		File featureListFile = new File(projectFolder, "experiments/conll2015/featurelists/discourseRelations.featurelist");
 		ArrayList<String> featureList = FeatureVectorsCollection.importFeatureNamesList(featureListFile);
 		FeatureVectorsCollection fvc = exp.extractFeatureVectorsFromSdops(ipc, featureList);
-		fvc.exportToFile(new File(projectFolder, "experiments/conll2015/discourseRelations.fvec"));
+		fvc.exportToFvecFile(new File(projectFolder, "experiments/conll2015/discourseRelations.fvec"));
 		exp.exportFeatureVectorsCollectionToJsonFile(fvc, new File(projectFolder, "experiments/conll2015/discourseRelations.json"));
 		
     }

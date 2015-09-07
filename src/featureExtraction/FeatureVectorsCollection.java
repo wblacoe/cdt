@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.TreeMap;
 
 public class FeatureVectorsCollection {
@@ -222,14 +223,14 @@ public class FeatureVectorsCollection {
 		}
 	}
 	
-	public void exportToFile(File featureVectorsFile){
-		Helper.report("[FeatureVectorsCollection] Exporting feature vectors to \"" + featureVectorsFile.getAbsolutePath() + "...");
+	public void exportToFvecFile(File fvecFile, Collection<Integer> indicesToKeep){
+		Helper.report("[FeatureVectorsCollection] Exporting feature vectors to \"" + fvecFile.getAbsolutePath() + "...");
 
-		if(!featureVectorsFile.getParentFile().exists()) featureVectorsFile.getParentFile().mkdirs();
+		if(!fvecFile.getParentFile().exists()) fvecFile.getParentFile().mkdirs();
 		
 		int counter = 0;
 		try{
-			BufferedWriter out = new BufferedWriter(new FileWriter(featureVectorsFile));
+			BufferedWriter out = new BufferedWriter(new FileWriter(fvecFile));
 			
 			//write the schema
 			for(String featureName : featureNamesList){
@@ -238,14 +239,16 @@ public class FeatureVectorsCollection {
 			
 			//go through all feature vectors
 			for(Integer index : indexFeatureVectorMap.navigableKeySet()){
-				FeatureVector fv = indexFeatureVectorMap.get(index);
-				Double[] doubleArray = fv.toDoubleArray(featureNamesList);
-				out.write("" + index);
-				for(int i=0; i<doubleArray.length; i++){
-					out.write(" " + doubleArray[i]);
+				if(indicesToKeep == null || indicesToKeep.contains(index)){
+					FeatureVector fv = indexFeatureVectorMap.get(index);
+					Double[] doubleArray = fv.toDoubleArray(featureNamesList);
+					out.write("" + index);
+					for(int i=0; i<doubleArray.length; i++){
+						out.write(" " + doubleArray[i]);
+					}
+					out.write("\n");
+					counter++;
 				}
-				out.write("\n");
-				counter++;
 			}
 			
 			out.close();
@@ -255,8 +258,66 @@ public class FeatureVectorsCollection {
 		
 		Helper.report("[FeatureVectorsCollection] ...Finished exporting " + counter + " feature vectors of length " + this.getAmountOfFeatures());
 	}
+	public void exportToFvecFile(File fvecFile){
+		exportToFvecFile(fvecFile, null);
+	}
 
-	//import feature names list for feature selection
+	public void exportToArffFile(File arffFile, Collection<Integer> indicesToKeep, String[] classNames){
+		Helper.report("[FeatureVectorsCollection] Exporting feature vectors to \"" + arffFile.getAbsolutePath() + "...");
+
+		if(!arffFile.getParentFile().exists()) arffFile.getParentFile().mkdirs();
+		
+		int counter = 0;
+		try{
+			BufferedWriter out = new BufferedWriter(new FileWriter(arffFile));
+			
+            out.write("@relation rel\n");
+            
+			//write the schema
+			Iterator<String> it = featureNamesList.iterator();
+			String featureName = null;
+			while(it.hasNext()){
+				featureName = it.next();
+				if(it.hasNext()){
+					//if attribute is not the final one
+					out.write("@attribute \"" + featureName + "\" real\n");
+				}else{
+					//for final attribute
+					String finalAttributeString = "@attribute \"" + featureName + "\" {" + classNames[0];
+					for(int i=1; i<classNames.length; i++) finalAttributeString += "," + classNames[i];
+					finalAttributeString += "}";
+					out.write(finalAttributeString + "\n");
+				}
+			}
+            
+            out.write("@data\n");
+			
+			//go through all feature vectors
+			for(Integer index : indexFeatureVectorMap.navigableKeySet()){
+				if(indicesToKeep == null || indicesToKeep.contains(index)){
+					FeatureVector fv = indexFeatureVectorMap.get(index);
+					Double[] doubleArray = fv.toDoubleArray(featureNamesList);
+					for(int i=0; i<doubleArray.length; i++){
+						out.write((i == 0 ? "" : " ") + doubleArray[i]);
+					}
+					out.write("\n");
+					counter++;
+				}
+			}
+			
+			out.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		
+		Helper.report("[FeatureVectorsCollection] ...Finished exporting " + counter + " feature vectors of length " + this.getAmountOfFeatures());
+	}
+	public void exportToArffFile(File arffFile, String[] classNames){
+		exportToArffFile(arffFile, null, classNames);
+	}
+
+    
+    //import feature names list for feature selection
 	public static ArrayList<String> importFeatureNamesList(File featureNamesListFile) {
 		Helper.report("[FeatureVectorsCollection] Importing feature names list from \"" + featureNamesListFile.getAbsolutePath() + "\"...");
 		

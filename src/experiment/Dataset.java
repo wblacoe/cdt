@@ -15,6 +15,10 @@ public class Dataset {
         indexInstanceMap = new HashMap<>();
     }
     
+    public boolean hasInstance(Integer index){
+        return indexInstanceMap.containsKey(index);
+    }
+    
     public void setInstance(Integer index, AbstractInstance instance){
         indexInstanceMap.put(index, instance);
     }
@@ -29,6 +33,10 @@ public class Dataset {
     
     public int getSize(){
         return indexInstanceMap.size();
+    }
+    
+    public void clear(){
+        indexInstanceMap.clear();
     }
 
 }
