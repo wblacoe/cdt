@@ -38,13 +38,17 @@ public class VocabularyMatrixImporterThread implements Runnable {
 			
 			while(true){
                 Matrix m = Matrix.importFromReader(in);
-                if(m == null) break;
+                if(m == null){
+                    //System.out.println("imported value matrix is NULL!"); //DEBUG
+                    break;
+                }
 				if(m instanceof ValueMatrix && normalize) ((ValueMatrix) m).normalize();
                 counter++;
                 TargetWord tw = Vocabulary.getTargetWord(m.getName());
                 //System.out.println("Finished loading matrix \"" + m.getName() + "\", card=" + m.getCardinality() + "..."); //DEBUG
                 if(tw != null){
                     tw.setLexicalRepresentation(m);
+                    //System.out.println("attaching value matrix to \"" + tw.getWord() + "\""); //DEBUG
                 }
                 
                 //sometimes useful

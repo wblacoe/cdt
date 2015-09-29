@@ -1,9 +1,10 @@
 package linearAlgebra.value;
 
 import cdt.Helper;
-import experiment.TargetElements;
+import experiment.dep.Vocabulary;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import linearAlgebra.BaseMatrix;
 import linearAlgebra.BaseTensor;
 import linearAlgebra.Matrix;
@@ -20,6 +22,7 @@ import numberTypes.NNumber;
 import numberTypes.NNumberVector;
 import space.TensorSpace;
 import space.dep.DepNeighbourhoodSpace;
+import space.dep.DepRelationCluster;
 
 /**
  * .
@@ -30,12 +33,15 @@ import space.dep.DepNeighbourhoodSpace;
  */
 public class ValueMatrix extends Matrix {
  
+    protected static Pattern partialTracePattern = Pattern.compile("<mode name=\\\"(.*?)\\\" index=\\\"(.*?)\\\" dimensionality=\\\"(.*?)\\\" cardinality=\\\"(.*?)\\\">");
+    
+    
     private int sorting;
-    //private NNumber trace;
-    private NNumberVector[] partialTraceVectors;
+    private NNumberVector[] partialTraceDiagonalVectors; //uses target word (vocabulary) indices
     
     //this matrix is the sum of these base matrices
-    private ValueBaseMatrix[] valueBaseMatrices;
+    private ValueBaseMatrix[] valueBaseMatrices; //uses context word indices
+    
     
     public ValueMatrix(int cardinality){
         super();
@@ -43,7 +49,7 @@ public class ValueMatrix extends Matrix {
         //sorting = Helper.SORTED_BY_DIMENSION;
         valueBaseMatrices = new ValueBaseMatrix[cardinality];
         //trace = null;
-        partialTraceVectors = null;
+        partialTraceDiagonalVectors = null;
     }
     
     public void setSorting(int n){
@@ -75,6 +81,15 @@ public class ValueMatrix extends Matrix {
     public ValueBaseMatrix[] getValueBaseMatrices(){
         return valueBaseMatrices;
     }
+    
+    public NNumberVector[] getPartialTraceDiagonalVectors(){
+        return partialTraceDiagonalVectors;
+    }
+    
+    public void setPartialTraceDiagonalVectors(NNumberVector[] partialTraceDiagonalVectors){
+        this.partialTraceDiagonalVectors = partialTraceDiagonalVectors;
+    }
+
     
     @Override
     public boolean isZero(){
@@ -777,40 +792,147 @@ public class ValueMatrix extends Matrix {
     }
     
     //modeIndex is in [1;order]
-    //returns a vector which is the diagonal of the (first-order) matrix which results from tracing out all modes except the one with given mode index 
-    public NNumberVector getPartialTraceVector(int modeIndex){
+    //returns a vector which is the diagonal of the (first-order) matrix which results from tracing out all modes except the one with given mode index
+    //this vector assigns each (occuring) target word in the vocabulary a weight. thus its indices are in [0;vocabulary_size]
+    public NNumberVector getPartialTraceDiagonalVector(int modeIndex){
 
-        //ensure that array of partial trace vectors is initialised
-        if(partialTraceVectors == null) partialTraceVectors = new NNumberVector[DepNeighbourhoodSpace.getOrder()];
+        //ensure that array of partial trace diagonal vectors is initialised
+        //#if(partialTraceDiagonalVectors == null) partialTraceDiagonalVectors = new NNumberVector[DepNeighbourhoodSpace.getOrder()];
+        if(partialTraceDiagonalVectors == null) partialTraceDiagonalVectors = new NNumberVector[DepNeighbourhoodSpace.getOrder() + 1];
 
-        //if this partial trace vector has been computed before
-        if(partialTraceVectors[modeIndex - 1] != null) return partialTraceVectors[modeIndex - 1];
+        //if this partial trace diagonal vector has been computed before
+        //#if(partialTraceDiagonalVectors[modeIndex - 1] != null) return partialTraceDiagonalVectors[modeIndex - 1];
+        if(partialTraceDiagonalVectors[modeIndex] != null) return partialTraceDiagonalVectors[modeIndex];
         
-        //start a new partial trace vector
-        NNumberVector partialTraceVector = new NNumberVector(TargetElements.getSize());
+        //start a new partial trace diagonal vector
+        NNumberVector partialTraceDiagonalVector = new NNumberVector(Vocabulary.getSize());
         
+		//compute new partial trace diagonal vector from base matrices currently contained in this ldop
+		DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationCluster(modeIndex);
         for(ValueBaseMatrix bm : valueBaseMatrices){
             if(bm == null) continue;
             NNumber ip = bm.getLeftBaseTensor().innerProduct(bm.getRightBaseTensor());
             if(ip != null){
-                NNumber weight = ip.multiply(bm.getValue());
+                NNumber weight = ip.multiply(bm.getValue()); //weight need not be normalised since it comes from a normalised ldop
                 
                 int dimensionLeft = bm.getLeftBaseTensor().getDimensionAtMode(modeIndex);
                 int dimensionRight = bm.getRightBaseTensor().getDimensionAtMode(modeIndex);
                 int dimension = dimensionLeft == 0 ? dimensionRight : dimensionLeft;
                 
-                partialTraceVector.add(dimension, weight);
+                if(dimension > 0){ //ignore dummy word
+                    int vocabularyIndex = drc.getContextWord(dimension).getVocabularyIndex();
+                    partialTraceDiagonalVector.add(vocabularyIndex, weight);
+                }
             }
         }
         
         //save partial trace vector for later
-        partialTraceVectors[modeIndex - 1] = partialTraceVector;
+        //#partialTraceDiagonalVectors[modeIndex - 1] = partialTraceDiagonalVector;
+        partialTraceDiagonalVectors[modeIndex] = partialTraceDiagonalVector;
+		
         
-        return partialTraceVector;
+        return partialTraceDiagonalVector;
+    }
+	
+	public void normalizePartialTraceDiagonalVectors(){
+		if(partialTraceDiagonalVectors != null){
+			for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+				//#NNumberVector partialTraceDiagonalVector = partialTraceDiagonalVectors[m - 1];
+                NNumberVector partialTraceDiagonalVector = partialTraceDiagonalVectors[m];
+				if(partialTraceDiagonalVector != null){
+					partialTraceDiagonalVector.normalize();
+				}
+			}
+		}
+	}
+    
+    protected static NNumberVector importPartialTraceDiagonalVector(BufferedReader in) throws IOException{
+        NNumberVector v = new NNumberVector(Vocabulary.getSize());
+        
+        String line;
+        while((line = in.readLine()) != null){
+            if(line.equals("</mode>")){
+                break;
+            }else{
+                String[] entries = line.split(":");
+                int vocabularyIndex;
+                if(Helper.prettyRead){
+                    vocabularyIndex = Vocabulary.getTargetWordIndex(entries[0]);
+                }else{
+                    vocabularyIndex = Integer.parseInt(entries[0]);
+                }
+                NNumber weight = NNumber.create(Double.parseDouble(entries[1]));
+                v.setWeight(vocabularyIndex, weight);
+            }
+        }
+        
+        return v;
     }
     
-    public static ValueMatrix importFromReader(BufferedReader in, int cardinality) throws IOException{
-        ValueMatrix m = new ValueMatrix(cardinality);
+    protected static NNumberVector[] importPartialTraceDiagonalVectors(BufferedReader in) throws IOException{
+        //HashMap<Integer, NNumberVector> modeIndexPartialTraceDiagonalVectorMap = new HashMap<>();
+        
+        //int currentModeIndex = -1;
+        //NNumberVector currentVector = null;
+        
+        NNumberVector[] ptdv = new NNumberVector[DepNeighbourhoodSpace.getOrder() + 1];
+        
+        String line;
+        while((line = in.readLine()) != null){
+            
+            if(line.startsWith("<mode")){
+                Matcher matcher = partialTracePattern.matcher(line);
+                if(matcher.find()){
+                    int modeIndex = Integer.parseInt(matcher.group(2));
+                    NNumberVector v = importPartialTraceDiagonalVector(in);
+                    ptdv[modeIndex] = v;
+                }
+            }else if(line.equals("</partialtracediagonals>")){
+                break;
+            }
+        
+        }
+            
+            /*if(line.startsWith("<mode")){
+                Matcher matcher = partialTracePattern.matcher(line);
+                if(matcher.find()){
+                    currentModeIndex = Integer.parseInt(matcher.group(2));
+                    currentVector = new NNumberVector(Vocabulary.getSize());
+                }
+            }else if(line.equals("</mode>") && currentModeIndex != -1){
+                modeIndexPartialTraceDiagonalVectorMap.put(currentModeIndex, currentVector.getCopy());
+                currentModeIndex = -1;
+            }else if(currentModeIndex > -1){
+                String[] entries = line.split(":");
+                if(entries.length == 2){
+                    int vocabularyIndex;
+                    if(Helper.prettyRead){
+                        vocabularyIndex = Vocabulary.getTargetWordIndex(entries[0]);
+                    }else{
+                        vocabularyIndex = Integer.parseInt(entries[0]);
+                    }
+                    NNumber weight = NNumber.create(Double.parseDouble(entries[1]));
+                    if(currentVector != null) currentVector.setWeight(vocabularyIndex, weight);
+                }
+            }else if(line.equals("</partialtracediagonals>")){
+                break;
+            }
+        }
+        
+        NNumberVector[] ptdv = null;
+        if(!modeIndexPartialTraceDiagonalVectorMap.isEmpty()){
+            //#ptdv = new NNumberVector[DepNeighbourhoodSpace.getOrder()];
+            ptdv = new NNumberVector[DepNeighbourhoodSpace.getOrder() + 1];
+            for(Integer modeIndex : modeIndexPartialTraceDiagonalVectorMap.keySet()){
+                ptdv[modeIndex] = modeIndexPartialTraceDiagonalVectorMap.get(modeIndex);
+            }
+        }
+        */
+        
+        return ptdv;
+    }
+    
+    protected static void importBaseMatricesFromReader(ValueMatrix m, int cardinality, BufferedReader in) throws IOException{
         
         boolean isSortedByValue = true;
         NNumber lastValue = null;
@@ -818,24 +940,42 @@ public class ValueMatrix extends Matrix {
         String line;
         int i=0;
         while((line = in.readLine()) != null){
-            if(i < cardinality){
+            if(line.equals("</basematrices>")){
+                if(isSortedByValue) m.setSorting(Helper.SORTED_BY_VALUE);
+                break;
+            }else{
                 String[] entries = line.split("\t"); //value \t left base tensor \t right base tensor
-                NNumber value = NNumber.create(Float.parseFloat(entries[0]));
-                if(isSortedByValue && lastValue != null && value.compareTo(lastValue) == 1){
-                    isSortedByValue = false;
-                }else{
-                    lastValue = value;
+                if(entries.length == 3 && i < cardinality){
+                    NNumber value = NNumber.create(Float.parseFloat(entries[0]));
+                    if(isSortedByValue && lastValue != null && value.compareTo(lastValue) == 1){
+                        isSortedByValue = false;
+                    }else{
+                        lastValue = value;
+                    }
+                    BaseTensor leftBt = BaseTensor.importFromString(entries[1]);
+                    BaseTensor rightBt = BaseTensor.importFromString(entries[2]);
+                    ValueBaseMatrix bm = new ValueBaseMatrix(leftBt, rightBt, value);
+                    m.setBaseMatrix(i, bm);
+                    i++;
                 }
-                BaseTensor leftBt = BaseTensor.importFromString(entries[1]);
-                BaseTensor rightBt = BaseTensor.importFromString(entries[2]);
-                ValueBaseMatrix bm = new ValueBaseMatrix(leftBt, rightBt, value);
-                m.setBaseMatrix(i, bm);
             }
-            i++;
-            if(line.equals("</matrix>")) break;
         }
         
-        if(isSortedByValue) m.setSorting(Helper.SORTED_BY_VALUE);
+    }
+    
+    public static ValueMatrix importFromReader(BufferedReader in, int cardinality) throws IOException{
+        ValueMatrix m = new ValueMatrix(cardinality);
+        
+        String line;
+        while((line = in.readLine()) != null){
+            if(line.startsWith("<partialtracediagonals")){
+                m.partialTraceDiagonalVectors = importPartialTraceDiagonalVectors(in);
+            }else if(line.startsWith("<basematrices")){
+                importBaseMatricesFromReader(m, cardinality, in);
+            }else if(line.equals("</matrix>")){
+                break;
+            }
+        }
         
         return m;
     }
@@ -854,8 +994,8 @@ public class ValueMatrix extends Matrix {
                         int cardinality = Integer.parseInt(matcher.group(3));
                         m = ValueMatrix.importFromReader(in, cardinality);
                     }
-                    m.setName(matcher.group(1));
-                    //System.out.println(line + ", name: " + matcher.group(1) + ", card: " + matcher.group(3) + ", type: " + matcher.group(2)); //DEBUG
+					String name = matcher.group(1);
+                    if(name != null) m.setName(name);
                 }
             }
             
@@ -865,19 +1005,58 @@ public class ValueMatrix extends Matrix {
 
     }
     
+	protected void savePartialTraceVectorsToWriter(BufferedWriter out) throws IOException{
+		boolean prettyPrint = Helper.prettyPrint;
+        out.write("<partialtracediagonals>\n");
+        for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+			DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationCluster(m);
+            NNumberVector partialTraceDiagonalVector = getPartialTraceDiagonalVector(m);
+			out.write("<mode name=\"" + drc.getName() + "\" index=\"" + m + "\" dimensionality=\"" + DepNeighbourhoodSpace.getDimensionality() + "\" cardinality=\"" + partialTraceDiagonalVector.getCardinality() + "\">\n");
+            //go through all target words
+			for(int i=0; i<Vocabulary.getSize(); i++){
+				NNumber weight = partialTraceDiagonalVector.getWeight(i);
+				if(weight != null && !weight.isZero()){
+					if(prettyPrint){
+						out.write(Vocabulary.getTargetWord(i).getWord() + ":" + weight.getDoubleValue() + "\n");
+					}else{
+						out.write(i + ":" + weight.getDoubleValue() + "\n");
+					}
+				}
+			}
+			out.write("</mode>\n");
+        }
+        out.write("</partialtracediagonals>\n");
+	}
+	
     @Override
     public void saveToWriter(BufferedWriter out) throws IOException{
         out.write("<matrix name=\"" + getName() + "\" type=\"value\" cardinality=\"" + getCardinality() + "\">\n");
+        savePartialTraceVectorsToWriter(out);
+        out.write("<basematrices>\n");
         for(int i=0; i<getCardinality(); i++){
             ValueBaseMatrix bm = valueBaseMatrices[i];
             bm.exportToWriter(out);
         }
+        out.write("</basematrices>\n");
         out.write("</matrix>\n");
     }
     
+    public void saveToFile(File file){
+        try{
+            BufferedWriter out = Helper.getFileWriter(file);
+            saveToWriter(out);
+            out.close();
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+	
     @Override
     public String toString(){
-        String s = "value matrix, name=\"" + name + "\", card=" + getCardinality() + ", trace=" + trace() + "\n";
+        String s = "value matrix, name=\"" + name + "\", card=" + getCardinality() + ", trace=" + trace() + "\npartials.cardPerMode:";
+        for(int i=1; i<=DepNeighbourhoodSpace.getOrder(); i++){
+            s += " " + i + ":" + partialTraceDiagonalVectors[i].getCardinality() + ",";
+        }
         for(int i=0; i<Math.min(5, getCardinality()); i++){
             s += getBaseMatrix(i) + "\n";
         }

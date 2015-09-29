@@ -156,8 +156,14 @@ public class Aligner {
 
 	public static void main(String[] args){
 		
-		ChunkedSentence cs1 = new ChunkedSentence("a brown and white dog is running through the tall wild grass");
-		ChunkedSentence cs2 = new ChunkedSentence("a brown and white dog is moving through the grass");
+		//String s1 = "a brown and white dog is running through the tall wild grass";
+		//String s2 = "a brown and white dog is moving through the grass";
+		
+		String s1 = "A man is flooring a sitting guitar player";
+		String s2 = "A man is sitting on the floor in a room and strumminig a guitar";
+		
+		ChunkedSentence cs1 = new ChunkedSentence(s1);
+		ChunkedSentence cs2 = new ChunkedSentence(s2);
 		
 		cs1.createChunks();
 		cs2.createChunks();

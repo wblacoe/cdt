@@ -2,8 +2,6 @@ package corpus.dep.marginalizer;
 
 import cdt.Helper;
 import corpus.Corpus;
-import corpus.dep.contextCounter.DepContextCounts;
-import static corpus.dep.contextCounter.DepContextCounts.importFromReader;
 import experiment.dep.Vocabulary;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

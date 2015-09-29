@@ -4,8 +4,8 @@ import cdt.Helper;
 import composition.dep.Composor;
 import corpus.dep.converter.DepNode;
 import corpus.dep.converter.DepTree;
+import experiment.AbstractInstance;
 import experiment.Experiment;
-import experiment.dep.conll2015.Instance;
 import featureExtraction.AbstractFeatureVectorExtractor;
 import featureExtraction.FeatureVectorsCollection;
 import innerProduct.InnerProductsCache;
@@ -36,11 +36,18 @@ public class DepExperiment extends Experiment {
         HashMap<String, DepTree> indexDepTreesMap = new HashMap<>();
         
         for(Integer instanceIndex : dataset.getIndicesSet()){
-            Instance instance = (Instance) dataset.getInstance(instanceIndex);
-            DepTree depTree1 = instance.arguments[0];
-            DepTree depTree2 = instance.arguments[1];
-            indexDepTreesMap.put(instanceIndex + ".1", depTree1);
-			indexDepTreesMap.put(instanceIndex + ".2", depTree2);
+            AbstractInstance instance = dataset.getInstance(instanceIndex);
+			if(instance.getClass().equals(experiment.dep.conll2015.Instance.class)){
+				DepTree depTree1 = ((experiment.dep.conll2015.Instance) instance).arguments[0];
+				DepTree depTree2 = ((experiment.dep.conll2015.Instance) instance).arguments[1];
+				indexDepTreesMap.put(instanceIndex + ".1", depTree1);
+				indexDepTreesMap.put(instanceIndex + ".2", depTree2);
+			}else if(instance.getClass().equals(experiment.dep.four4cl.Instance.class)){
+				DepTree depTree1 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[0];
+				DepTree depTree2 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[1];
+				indexDepTreesMap.put(instanceIndex + ".1", depTree1);
+				indexDepTreesMap.put(instanceIndex + ".2", depTree2);
+			}
         }
         
         Composor cmp = new Composor(ipc, sdopsFolder, innerProductsFile);
@@ -75,15 +82,27 @@ public class DepExperiment extends Experiment {
 		Helper.report("[DepExperiment] Attaching matrices to dataset...");
 		
 		for(Integer index : dataset.getIndicesSet()){
-			Instance instance = (Instance) dataset.getInstance(index);
-			DepTree depTree1 = instance.arguments[0];
-			DepTree depTree2 = instance.arguments[1];
-			LinearCombinationMatrix sdop1 = (LinearCombinationMatrix) indexSdopsMap.get(index + ".1");
-			LinearCombinationMatrix sdop2 = (LinearCombinationMatrix) indexSdopsMap.get(index + ".2");
-			depTree1.getRootNode().setRepresentation(sdop1);
-			attachSdopsToSubRoots(index + ".1", depTree1);
-			depTree2.getRootNode().setRepresentation(sdop2);
-			attachSdopsToSubRoots(index + ".2", depTree2);
+			AbstractInstance instance = dataset.getInstance(index);
+			
+			if(instance.getClass().equals(experiment.dep.conll2015.Instance.class)){
+				DepTree depTree1 = ((experiment.dep.conll2015.Instance) instance).arguments[0];
+				DepTree depTree2 = ((experiment.dep.conll2015.Instance) instance).arguments[1];
+				LinearCombinationMatrix sdop1 = (LinearCombinationMatrix) indexSdopsMap.get(index + ".1");
+				LinearCombinationMatrix sdop2 = (LinearCombinationMatrix) indexSdopsMap.get(index + ".2");
+				depTree1.getRootNode().setRepresentation(sdop1);
+				attachSdopsToSubRoots(index + ".1", depTree1);
+				depTree2.getRootNode().setRepresentation(sdop2);
+				attachSdopsToSubRoots(index + ".2", depTree2);
+			}else if(instance.getClass().equals(experiment.dep.four4cl.Instance.class)){
+				DepTree depTree1 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[0];
+				DepTree depTree2 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[1];
+				LinearCombinationMatrix sdop1 = (LinearCombinationMatrix) indexSdopsMap.get(index + ".1");
+				LinearCombinationMatrix sdop2 = (LinearCombinationMatrix) indexSdopsMap.get(index + ".2");
+				depTree1.getRootNode().setRepresentation(sdop1);
+				attachSdopsToSubRoots(index + ".1", depTree1);
+				depTree2.getRootNode().setRepresentation(sdop2);
+				attachSdopsToSubRoots(index + ".2", depTree2);
+			}
 		}
 		
 		Helper.report("[DepExperiment] ...Finished attaching matrices to dataset");

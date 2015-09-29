@@ -37,11 +37,20 @@ public class Vocabulary extends TargetElements {
     }
     
     public static TargetWord getTargetWord(String word){
-        return targetWordMap.get(word);
+		if(word == null){
+			return null;
+		}else{
+			return targetWordMap.get(word);
+		}
     }
     
-    public static int getTargetWordIndex(String word){
-        return getTargetWord(word).getIndex();
+    public static Integer getTargetWordIndex(String word){
+        TargetWord tw = getTargetWord(word);
+		if(tw == null){
+			return null;
+		}else{
+			return tw.getIndex();
+		}
     }
     
     public static int getSizeOfTargetWordMap(){
@@ -60,7 +69,7 @@ public class Vocabulary extends TargetElements {
         return getSize() == 0;
     }
     
-    public static void removeAllRepresentations(){
+    public static void removeAllLexicalRepresentations(){
         for(int i=0; i<getSize(); i++){
             getTargetWord(i).removeLexicalRepresentation();
         }

@@ -71,17 +71,18 @@ public class ComposorThread implements Runnable {
         TargetWord head = Vocabulary.getTargetWord(headNode.getWord());
         int headTargetWordIndex = head.getIndex();
         
-        NNumberVector partialTraceVector = dependentRepresentation.getPartialTraceVector(drc.getModeIndex());
+        NNumberVector partialTraceDiagonalVector = dependentRepresentation.getPartialTraceDiagonalVector(drc.getModeIndex());
         //System.out.println("part(" + " " + dependentRepresentation + ") = " + partialTraceVector); //DEBUG
 
         //multiply the weights for alternative heads by their similarities with given head
-        NNumberVector weightedSimilaritiesVector = new NNumberVector(partialTraceVector.getLength());
+        NNumberVector weightedSimilaritiesVector = new NNumberVector(partialTraceDiagonalVector.getLength());
         
         //if there is a head representation, multiply weights by similarities
         if(headHasLexicalRepresentation){
             //String s = "similarities: "; //DEBUG
-            for(int i=0; i<partialTraceVector.getLength(); i++){
-                NNumber weight = partialTraceVector.getWeight(i);
+            //go through all target words
+            for(int i=0; i<Vocabulary.getSize(); i++){
+                NNumber weight = partialTraceDiagonalVector.getWeight(i);
                 if(weight != null && !weight.isZero()){
                     NNumber similarity = similarity(headTargetWordIndex, i);
                     if(similarity != null && !similarity.isZero()){
@@ -166,6 +167,8 @@ public class ComposorThread implements Runnable {
 			m = depTree.getRootNode().getRepresentation();
 			m.setName(index);
 			treeRepresentations.put(index, m);
+			
+			/* save representations of subroot nodes for later
 			int i=0;
 			for(DepNode dependent : depTree.getRootNode().getDependents()){
 				m = dependent.getRepresentation();
@@ -175,6 +178,7 @@ public class ComposorThread implements Runnable {
 					i++;
 				}
 			}
+			*/
 			
 			Helper.report("[ComposorThread] (" + name + ") ...Finished composing sentence #" + index);
         }

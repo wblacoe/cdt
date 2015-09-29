@@ -25,19 +25,23 @@ public class TensorSpace {
     
     //modeIndex should be in [1;order]
     public static void setModeObject(int modeIndex, Mode modeObject){
-        modeObjectsArray[modeIndex - 1] = modeObject;
+        //#modeObjectsArray[modeIndex - 1] = modeObject;
+        modeObjectsArray[modeIndex] = modeObject;
     }
     //modeIndex should be in [1;order]
     public static Mode getModeObject(int modeIndex){
-        return modeObjectsArray[modeIndex - 1];
+        //#return modeObjectsArray[modeIndex - 1];
+        return modeObjectsArray[modeIndex];
     }
     
     //warning: this deletes previously existing modeObjectsArray
     public static void setOrder(int order){
-        modeObjectsArray = new Mode[order];
+        //#modeObjectsArray = new Mode[order];
+        modeObjectsArray = new Mode[order + 1];
     }
     public static int getOrder(){
-        return modeObjectsArray.length;
+        //#return modeObjectsArray.length;
+        return modeObjectsArray.length - 1;
     }
     
     public static boolean hasDimensions(){
@@ -59,7 +63,7 @@ public class TensorSpace {
                         return false;
                     }else{
                         //System.out.println("Mode " + m); //DEBUG
-                        for(int d=0; d<getDimensionality(); d++){
+                        for(int d=1; d<=getDimensionality(); d++){
                             Dimension dimension = dimensionObjectsArray[d];
                             if(dimension == null){
                                 hasDimensions = false;

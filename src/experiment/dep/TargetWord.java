@@ -5,7 +5,6 @@ import java.io.IOException;
 import experiment.TargetElement;
 import java.io.BufferedWriter;
 import linearAlgebra.Matrix;
-import linearAlgebra.value.LinearCombinationMatrix;
 
 /**
  *

@@ -47,16 +47,16 @@ public class Experiment {
         return dataset;
     }
     
-    public void extractAndSaveJointCountsFromCorpus(File outputFolder, String prefix, int amountOfOutputFiles, HashSet<String> targetWords){
+    public void extractAndSaveJointCountsFromCorpus(File outputFolder, String prefix, int amountOfOutputFilesPerPhase, HashSet<String> targetWords){
         DepConverter dc = new DepConverter(targetWords);
-        dc.extractJointCountsFromCorpus();
+        dc.extractJointCountsFromCorpus(); //attaches jdops to vocabulary
         VocabularyMatrixExporter me = new VocabularyMatrixExporter();
-        me.exportMatricesToFiles(outputFolder, prefix, amountOfOutputFiles);
+        me.exportMatricesToFiles(outputFolder, prefix, amountOfOutputFilesPerPhase);
     }
-    public void extractAndSaveJointCountsFromCorpus(File outputFolder, String prefix, int amountOfOutputFiles){
-        extractAndSaveJointCountsFromCorpus(outputFolder, prefix, amountOfOutputFiles, null);
+    public void extractAndSaveJointCountsFromCorpus(File outputFolder, String prefix, int amountOfOutputFilesPerPhase){
+        extractAndSaveJointCountsFromCorpus(outputFolder, prefix, amountOfOutputFilesPerPhase, null);
     }
-    public void extractAndSaveJointCountsFromCorpus(File outputFolder, int amountOfOutputFiles, int amountOfTargetWordsPerPhase){
+    public void extractAndSaveJointCountsFromCorpus(File outputFolder, int amountOfOutputFilesPerPhase, int amountOfTargetWordsPerPhase){
         int amountofTargetWords = TargetElements.getSize();
         int amountOfPhases = (int) Math.ceil(1.0 * amountofTargetWords / amountOfTargetWordsPerPhase);
         
@@ -67,26 +67,27 @@ public class Experiment {
             //collect target words for this phase
             while(j < amountOfTargetWordsPerPhase){
                 TargetWord tw = Vocabulary.getTargetWord(i * amountOfTargetWordsPerPhase + j);
-                if(tw == null) break;
-                //System.out.println("Adding " + (i * amountOfTargetWordsPerPhase + j) + ":" + tw.getWord()); //DEBUG
-                targetWords.add(tw.getWord());
+                if(tw != null){
+					//System.out.println("Adding " + (i * amountOfTargetWordsPerPhase + j) + ":" + tw.getWord()); //DEBUG
+					targetWords.add(tw.getWord());
+				}
                 j++;
             }
             //run this phase
             Helper.report("[Experiment] Running phase " + (i+1) + "/" + amountOfPhases + "...");
-            extractAndSaveJointCountsFromCorpus(outputFolder, "phase" + (i+1) + ".", amountOfOutputFiles, targetWords);
+            extractAndSaveJointCountsFromCorpus(outputFolder, "phase" + (i+1) + ".", amountOfOutputFilesPerPhase, targetWords);
             Helper.report("[Experiment] ...Finished phase " + (i+1) + "/" + amountOfPhases);
             //clear all data from previous phase
             targetWords.clear();
-            Vocabulary.removeAllRepresentations();
+            Vocabulary.removeAllLexicalRepresentations();
         }
     }
     
-	//TODO count and report successes and other conditions
+	//imports jdops from disk, applies association function, saves ldops to disk, attaches ldops to vocabulary
     public void importAssociationateAndSaveMatrices(File jdopsFolder, DepMarginalCounts dmc, AssociationFunction af, File ldopsFolder){
 		File[] jdopsFiles = jdopsFolder.listFiles();
         for(File jdopsFile : jdopsFiles){
-            Helper.report("Processing jdops file \"" + jdopsFile.getName() + "\"...");
+            Helper.report("[Experiment] Processing jdops file \"" + jdopsFile.getName() + "\"...");
             try{
                 BufferedReader in = Helper.getFileReader(jdopsFile);
                 File ldopsFile = new File(ldopsFolder, jdopsFile.getName());
@@ -101,6 +102,7 @@ public class Experiment {
                     if(vm == null){
                         //System.out.println("d"); //DEBUG
                     }else{
+						Vocabulary.getTargetWord(m.getName()).setLexicalRepresentation(vm);
                         vm.saveToWriter(out);
                     }
                     counter++;
@@ -121,15 +123,9 @@ public class Experiment {
         mi.importMatricesFromFiles(folder.listFiles());
     }
     
-    /*public void importMatricesApplyAssociationFunctionAndSaveMatrices(File inputFolder, AssociationFunction af, boolean normalize, File outputFolder){
-        MatrixImporter mi = new MatrixImporter(normalize);
-        mi.importMatricesApplyAssociationFunctionAndSaveMatrices(inputFolder.listFiles(), af, outputFolder);
-    }
-    */
-    
     public void saveMatrices(File outputFolder){
         VocabularyMatrixExporter me = new VocabularyMatrixExporter();
-        me.exportMatricesToFiles(outputFolder, 8);
+        me.exportMatricesToFiles(outputFolder, 1); //change this back to 8
     }
 
 }

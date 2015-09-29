@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,17 +29,23 @@ public class DepNeighbourhoodSpace extends TensorSpace {
     //protected static final Pattern depNeighbourhoodSpacePattern = Pattern.compile("<space name=\\\"(.*?)\\\" order=\\\"(.*?)\\\" dimensionality=\\\"(.*?)\\\" corpusformat=\\\"(.*?)\\\" corpusfolder=\\\"(.*?)\\\" contextcountsfile=\\\"(.*?)\\\" datasetwordsfile=\\\"(.*?)\\\">");
     protected static final Pattern hyperParameterPattern = Pattern.compile("(.*?)=\\\"(.*?)\\\"");
     
+	private static String stoplistFilename = null;
     private static final HashSet<String> stoplist = new HashSet<>();
     private static final HashMap<String, DepRelationCluster> depRelationStringDepRelationClusterMap = new HashMap<>();
+    private static final HashMap<String, DepRelationCluster> depRelationClusterNameDepRelationClusterMap = new HashMap<>();
     private static String contextCountsFilename, datasetWordsFilename;
     
-    public static void saveDepRelationClusterUnderDepRelationString(String depRelationString, DepRelationCluster drc){
+    /*public static void saveDepRelationClusterUnderDepRelationString(String depRelationString, DepRelationCluster drc){
         depRelationStringDepRelationClusterMap.put(depRelationString, drc);
-    }
+    }*/
     public static DepRelationCluster getDepRelationClusterFromDepRelationString(String depRelationString){
         return depRelationStringDepRelationClusterMap.get(depRelationString);
     }
-    
+
+    public static DepRelationCluster getDepRelationClusterFromDepRelationClusterName(String depRelationClusterName){
+        return depRelationClusterNameDepRelationClusterMap.get(depRelationClusterName);
+    }
+
     public static void setDepRelation(int modeIndex, DepRelationCluster depRel){
         setModeObject(modeIndex, depRel);
     }
@@ -57,18 +64,18 @@ public class DepNeighbourhoodSpace extends TensorSpace {
             if(wordCountMap != null) iterators.put(drString, wordCountMap.descendingIterator());
         }
         
-        int d=0;
+        int d=1;
         while(true){
             for(String drString : iterators.keySet()){
                 Iterator<Entry<String, Long>> iterator = iterators.get(drString);
-                Entry<String, Long> entry = null;
+                //Entry<String, Long> entry = null;
                 if(iterator.hasNext()){
                     String contextWord = iterator.next().getKey();
                     //System.out.println("drc=" + drString + ", context word=" + contextWord + ", drc has context word=" + drc.hasContextWord(contextWord) + ", context word is in stoplist=" + stoplist.contains(contextWord)); //DEBUG
                     if(contextWord != null && !drc.hasContextWord(contextWord) && !stoplist.contains(contextWord)){
-                        d++;
                         drc.setContextWord(d, new ContextWord(d, contextWord));
                         if(d >= getDimensionality()) return;
+                        d++;
                     }
                 }
             }
@@ -81,11 +88,11 @@ public class DepNeighbourhoodSpace extends TensorSpace {
             DepContextCounts dcc = DepContextCounts.importFromFile(contextCountsFile);
 
             //create vocabulary file for each subspace that doesn't already have one
+			if(stoplistFilename != null) importStoplist();
             for(int m=1; m<=getOrder(); m++){
                 DepRelationCluster drc = getDepRelationCluster(m);
                 assignDimensionObjects(drc, dcc);
             }
-            //setHasDimensions(true);
         }
 	}
     
@@ -93,7 +100,7 @@ public class DepNeighbourhoodSpace extends TensorSpace {
         if(Vocabulary.isEmpty()){
             Helper.report("[DepNeighbourhoodSpace] Creating vocabulary from context words and dataset words...");
 
-            HashSet<String> targetWordsSet = new HashSet<>();
+            TreeSet<String> targetWordsSet = new TreeSet<>();
 
             //add dataset words
             try{
@@ -145,19 +152,32 @@ public class DepNeighbourhoodSpace extends TensorSpace {
         }
     }
 	
-    public static void importStoplist(File file) throws IOException{
-        BufferedReader in = Helper.getFileReader(file);
-        String line;
-        while((line = in.readLine()) != null){
-            stoplist.add(line);
-        }
-        in.close();
+    public static void importStoplist(){
+        Helper.report("[DepNeighbourhoodSpace] Importing stop list...");
+		
+		int counter = 0;
+		try{
+			BufferedReader in = Helper.getFileReader(new File(projectFolder, stoplistFilename));
+			
+			String line;
+			while((line = in.readLine()) != null){
+				stoplist.add(line);
+				counter++;
+			}
+			in.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		
+        Helper.report("[DepNeighbourhoodSpace] ...Finished importing stop list of size " + counter + "...");
     }
 	public static HashSet<String> getStoplist(){
 		return stoplist;
 	}
     
     private static void importHyperParameters(BufferedReader in) throws IOException{
+        Helper.report("[DepNeighbourhoodSpace] Importing hyperparameters...");
+        
         String line;
         while((line = in.readLine()) != null){
             if(line.equals("</hyperparameters>")) break;
@@ -166,6 +186,7 @@ public class DepNeighbourhoodSpace extends TensorSpace {
             if(matcher.find()){
                 String key = matcher.group(1);
                 String valueString = matcher.group(2);
+                Helper.report(key + " = " + valueString);
 
                 switch(key){
                     case "name":
@@ -189,11 +210,16 @@ public class DepNeighbourhoodSpace extends TensorSpace {
                     case "datasetwordsfile":
                         datasetWordsFilename = valueString;
                         break;
+					case "stoplistfile":
+						stoplistFilename = valueString;
+						break;
                 }
             }else{
                 Helper.report("[DepNeighbourhoodSpace] Could not parse hyperparameter line \"" + line + "\"...");
             }
         }
+        
+        Helper.report("[DepNeighbourhoodSpace] ...Finished importing hyperparameters.");
     }
     
     public static void importFromReader(BufferedReader in) throws IOException{
@@ -210,6 +236,8 @@ public class DepNeighbourhoodSpace extends TensorSpace {
                 DepRelationCluster drc = DepRelationCluster.importFromReader(in, line);
                 //save drc
                 setDepRelation(drc.getModeIndex(), drc);
+                //make drc findable by drc name
+                depRelationClusterNameDepRelationClusterMap.put(drc.getName(), drc);
                 //make drc findable under all dep relation strings it consists of
                 for(String depRelationString : drc.getDepRelationStrings()){
                     depRelationStringDepRelationClusterMap.put(depRelationString, drc);
@@ -253,7 +281,7 @@ public class DepNeighbourhoodSpace extends TensorSpace {
         out.write("<space>\n");
         
         //hyperparamters
-        out.write("<hyperparameters>\nname=\"" + getName() + "\"\norder=\"" + getOrder() + "\"\ndimensionality=\"" + getDimensionality() + "\"\ncorpusformat=\"" + Corpus.getFormat() + "\"\ncorpusfolder=\"" + Corpus.getFolderName() + "\"\ncontextcountsfile=\"" + contextCountsFilename + "\"\ndatasetwordsfile=\"" + datasetWordsFilename + "\"\n</hyperparameters>\n");
+        out.write("<hyperparameters>\nname=\"" + getName() + "\"\norder=\"" + getOrder() + "\"\ndimensionality=\"" + getDimensionality() + "\"\ncorpusformat=\"" + Corpus.getFormat() + "\"\ncorpusfolder=\"" + Corpus.getFolderName() + "\"\ncontextcountsfile=\"" + contextCountsFilename + "\"\ndatasetwordsfile=\"" + datasetWordsFilename + "\"\nstoplistfile=\"" + stoplistFilename + "\"\n</hyperparameters>\n");
         
         Vocabulary.saveToWriter(out);
         for(int m=1; m<=getOrder(); m++){

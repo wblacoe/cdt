@@ -115,7 +115,7 @@ public class Conll2015 extends DepExperiment {
         //exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
         
         //inner products cache
-        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/conll2015/innerProducts.txt");
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/innerProducts.txt");
         InnerProductsCache ipc = new InnerProductsCache();
         ipc.importFromFile(innerProductsFile);
 

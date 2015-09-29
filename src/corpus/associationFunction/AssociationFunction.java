@@ -21,6 +21,7 @@ public class AssociationFunction {
     public Matrix compute(CountMatrix cm, String targetWord){
         return null;
     }
+	
     public void compute(){
         Helper.report("[AssociationFunction] Applying no association function...");
     }

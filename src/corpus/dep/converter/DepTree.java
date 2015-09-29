@@ -205,7 +205,9 @@ public class DepTree {
 				}
 			}
 
-			root = subRootWithMaxHeight;
+			if(subRootWithMaxHeight != null){
+				root = subRootWithMaxHeight;
+			}
 			
 		}
 	}

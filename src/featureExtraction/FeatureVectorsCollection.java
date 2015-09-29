@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -222,6 +223,23 @@ public class FeatureVectorsCollection {
 			indexFeatureVectorMap.remove(index);
 		}
 	}
+	public void filter(File indicesFile){
+		HashSet<Integer> indices = new HashSet<>();
+		try{
+			BufferedReader in = Helper.getFileReader(indicesFile);
+			
+			String line;
+			while((line = in.readLine()) != null){
+				indices.add(Integer.parseInt(line));
+			}
+			
+			in.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		
+		filter(indices);
+	}
 	
 	public void exportToFvecFile(File fvecFile, Collection<Integer> indicesToKeep){
 		Helper.report("[FeatureVectorsCollection] Exporting feature vectors to \"" + fvecFile.getAbsolutePath() + "...");
@@ -339,6 +357,20 @@ public class FeatureVectorsCollection {
 
 		Helper.report("[FeatureVectorsCollection] ...Finished importing feature names list (length is " +  importedFeatureNamesList.size() + ").");
 		return importedFeatureNamesList;
+	}
+
+	public FeatureVectorsCollection getCopy(){
+		FeatureVectorsCollection fvc = new FeatureVectorsCollection();
+		
+		ArrayList<String> newFeatureNamesList = new ArrayList<>();
+		for(String featureName : featureNamesList) newFeatureNamesList.add(featureName);
+		fvc.featureNamesList = newFeatureNamesList;
+		
+		TreeMap<Integer, FeatureVector> newIndexFeatureVectorMap = new TreeMap<>();
+		for(Integer key : indexFeatureVectorMap.keySet()) newIndexFeatureVectorMap.put(key, indexFeatureVectorMap.get(key));
+		fvc.indexFeatureVectorMap = newIndexFeatureVectorMap;
+		
+		return fvc;
 	}
 	
 }

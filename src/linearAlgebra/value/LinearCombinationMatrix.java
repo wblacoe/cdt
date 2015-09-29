@@ -7,7 +7,6 @@ import innerProduct.InnerProductsCache;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 import linearAlgebra.Matrix;
 import numberTypes.NNumber;
@@ -31,6 +30,21 @@ public class LinearCombinationMatrix extends Matrix {
     public LinearCombinationMatrix(NNumberVector weights){
         this.weights = weights;
     }
+	//create a one-hot weights vector for the target word with given vocabulary index
+	public LinearCombinationMatrix(TargetWord targetWord){
+		this();
+		setName(targetWord.getWord());
+		weights.setWeight(targetWord.getIndex(), NNumber.one());
+	}
+	//create a one-hot weights vector for the target word with given word from vocabulary
+	public LinearCombinationMatrix(String vocabularyWord){
+		this();
+		setName(vocabularyWord);
+		Integer vocabularyIndex = Vocabulary.getTargetWordIndex(vocabularyWord);
+		if(vocabularyIndex != null){
+			weights.setWeight(vocabularyIndex, NNumber.one());
+		}
+	}
     
     
     public NNumberVector getWeights(){
@@ -50,19 +64,22 @@ public class LinearCombinationMatrix extends Matrix {
     }
 
     //returns linear combination of partial trace vectors of subordinate matrices
-    public NNumberVector getPartialTraceVector(int modeIndex){
-        NNumberVector partialTraceVector = new NNumberVector(TargetElements.getSize());
+    public NNumberVector getPartialTraceDiagonalVector(int modeIndex){
+        NNumberVector partialTraceDiagonalVector = new NNumberVector(TargetElements.getSize());
         
-        for(int i=0; i<weights.getLength(); i++){
+        for(int i=0; i<Vocabulary.getSize(); i++){
             NNumber weight = weights.getWeight(i);
             if(weight != null && !weight.isZero()){
                 TargetWord tw = Vocabulary.getTargetWord(i);
-                NNumberVector twPartialTraceVector = ((ValueMatrix) tw.getLexicalRepresentation()).getPartialTraceVector(modeIndex);
-                partialTraceVector.add(twPartialTraceVector);
+                ValueMatrix vm = (ValueMatrix) tw.getLexicalRepresentation();
+                if(vm != null){
+                    NNumberVector twPartialTraceDiagonalVector = vm.getPartialTraceDiagonalVector(modeIndex);
+                    partialTraceDiagonalVector.add(twPartialTraceDiagonalVector.times(weight));
+                }
             }
         }
         
-        return partialTraceVector;
+        return partialTraceDiagonalVector;
     }
     
     @Override
@@ -171,6 +188,7 @@ public class LinearCombinationMatrix extends Matrix {
 				i++;
 			}
 		}
+        m.setName(name);
         
         return m;
     }

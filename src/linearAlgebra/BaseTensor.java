@@ -19,8 +19,10 @@ public class BaseTensor implements Comparable{
 	
 	public BaseTensor(){
 		int order = TensorSpace.getOrder();
-		modeDimensionArray = new int[order]; //initially filled with zero
-        modeIsDimensionCertainArray = new boolean[order]; //initially filled with false
+		//#modeDimensionArray = new int[order]; //initially filled with zero
+        modeDimensionArray = new int[order + 1]; //initially filled with zeros
+        //#modeIsDimensionCertainArray = new boolean[order]; //initially filled with false
+        modeIsDimensionCertainArray = new boolean[order + 1]; //initially filled with false
         modeAndOnlyCertainDimension = new int[2]; //initially filled with zero
 	}
     public BaseTensor(int[] modeDimensionArray, boolean[] modeIsDimensionCertainArray, int[] modeAndOnlyCertainDimension){
@@ -28,33 +30,26 @@ public class BaseTensor implements Comparable{
         this.modeIsDimensionCertainArray = modeIsDimensionCertainArray;
         this.modeAndOnlyCertainDimension = modeAndOnlyCertainDimension;
     }
-	/*public BaseTensor(String s){
-		this();
-		
-		String entries[] = s.split(" "); //mode entries
-        for(String entry : entries){
-            String[] modeAndDimension = entry.split(":");
-            int mode = Integer.parseInt(modeAndDimension[0]);
-            int dimension = Integer.parseInt(modeAndDimension[1]);
-            setDimensionAtMode(mode, dimension);
-        }
-	}
-	*/
+
 	
 	public int getOrder(){
-		return modeDimensionArray.length;
+		//#return modeDimensionArray.length;
+        return modeDimensionArray.length - 1;
 	}
 	
     //mode should be in [1;order]
 	public int getDimensionAtMode(int mode){
-		return modeDimensionArray[mode - 1];
+		//#return modeDimensionArray[mode - 1];
+        return modeDimensionArray[mode];
 	}
 	
     //mode should be in [1;order]
     //certain dimensions should be in [1;dimensionality], uncertain dimension is 0
 	public void setDimensionAtMode(int mode, int dimension){
-		modeDimensionArray[mode - 1] = dimension;
-        modeIsDimensionCertainArray[mode - 1] = (dimension != 0);
+		//#modeDimensionArray[mode - 1] = dimension;
+        modeDimensionArray[mode] = dimension;
+        //#modeIsDimensionCertainArray[mode - 1] = (dimension != 0);
+        modeIsDimensionCertainArray[mode] = (dimension != 0);
         
         //if not more than one mode has a certain dimension
         if(modeAndOnlyCertainDimension != null){
@@ -98,21 +93,25 @@ public class BaseTensor implements Comparable{
     
     //mode should be in [1;order]
     public boolean isDimensionCertainAtMode(int mode){
-        return modeIsDimensionCertainArray[mode - 1];
+        //#return modeIsDimensionCertainArray[mode - 1];
+        return modeIsDimensionCertainArray[mode];
     }
 	
 	
 	public void makeAbsolutelyUncertain(){
 		for(int m=1; m<=getOrder(); m++){
-            modeDimensionArray[m - 1] = 0;
-            modeIsDimensionCertainArray[m - 1] = false;
+            //#modeDimensionArray[m - 1] = 0;
+            modeDimensionArray[m] = 0;
+            //#modeIsDimensionCertainArray[m - 1] = false;
+            modeIsDimensionCertainArray[m] = false;
             modeAndOnlyCertainDimension = new int[2];
         }
 	}
 	
 	public boolean isAbsolutelyUncertain(){
 		for(int m=1; m<=getOrder(); m++){
-			if(modeDimensionArray[m - 1] != 0) return false;
+			//#if(modeDimensionArray[m - 1] != 0) return false;
+            if(modeDimensionArray[m] != 0) return false;
 		}
 		return true;
 	}
@@ -305,8 +304,16 @@ public class BaseTensor implements Comparable{
 		String entries[] = s.split(" "); //mode entries
         for(String entry : entries){
             String[] modeAndDimension = entry.split(":");
-            int mode = Integer.parseInt(modeAndDimension[0]);
-            int dimension = Integer.parseInt(modeAndDimension[1]);
+            int mode;
+            int dimension;
+            if(Helper.prettyRead){
+                DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationClusterName(modeAndDimension[0]);
+                mode = drc.getModeIndex();
+                dimension = drc.getDimensionIndex(modeAndDimension[1]);
+            }else{
+                mode = Integer.parseInt(modeAndDimension[0]);
+                dimension = Integer.parseInt(modeAndDimension[1]);
+            }
             bt.setDimensionAtMode(mode, dimension);
         }
         return bt;

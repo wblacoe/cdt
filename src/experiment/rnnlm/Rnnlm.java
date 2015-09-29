@@ -170,8 +170,10 @@ public class Rnnlm {
     }
    
     public static void main(String[] args){
+        int epoch = (args != null && args.length >= 1 && args[0] != null && !args[0].isEmpty() ? Integer.parseInt(args[0]) : 1);
+        
 		File datasetsFolder = new File("/disk/scratch/william/datasets");
-		File vectorsFolder = new File("/disk/scratch/s1270921/large_scale_rnnlm/repr/e5");
+		File vectorsFolder = new File("/disk/scratch/s1270921/large_scale_rnnlm/repr/e" + epoch);
 		File localFolder = new File("/disk/scratch/william/workWithXingxing");
         Rnnlm rnnlm = new Rnnlm();
 		rnnlm.a(datasetsFolder, vectorsFolder, localFolder);

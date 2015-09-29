@@ -99,5 +99,6 @@ public class Helper {
 
  
     public static boolean prettyPrint = false;
+    public static boolean prettyRead = false;
 
 }

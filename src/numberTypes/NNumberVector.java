@@ -23,6 +23,14 @@ public class NNumberVector {
     public int getLength(){
         return array.length;
     }
+	
+	public int getCardinality(){
+		int card = 0;
+		for(NNumber number : array) {
+			if(number != null && !number.isZero()) card++;
+		}
+		return card;
+	}
     
     public void add(NNumberVector v){
         NNumber[] givenArray = v.getArray();
@@ -58,6 +66,19 @@ public class NNumberVector {
 			}
 		}
 	}
+	
+	public NNumberVector times(NNumber scalar){
+		NNumberVector v = new NNumberVector(this.getLength());
+
+		for(int i=0; i<array.length; i++){
+			NNumber weight = array[i];
+			if(weight != null && !weight.isZero()){
+				v.setWeight(i, weight.multiply(scalar));
+			}
+		}
+		
+		return v;
+	}
 
     public void setWeight(int index, NNumber weight){
         array[index] = weight;
@@ -74,6 +95,32 @@ public class NNumberVector {
         return true;
     }
 	
+	public NNumber getL1Norm(){
+		NNumber l1norm = null, weight = null;
+		for(int i=0; i<array.length; i++){
+			weight = array[i];
+			if(weight != null && !weight.isZero()){
+				if(l1norm == null){
+					l1norm = weight;
+				}else{
+					l1norm = l1norm.add(weight);
+				}
+			}
+		}
+		
+		return l1norm;
+	}
+	
+	public void normalize(){
+		NNumber l1norm = getL1Norm(), weight = null;
+		for(int i=0; i<array.length; i++){
+			weight = array[i];
+			if(weight != null && !weight.isZero()){
+				array[i] = weight.divide(l1norm);
+			}
+		}
+	}
+	
 	public NNumberVector concatenate(NNumberVector v){
 		int thisLength = getLength();
 		NNumberVector c = new NNumberVector(thisLength+ v.getLength());
@@ -87,6 +134,17 @@ public class NNumberVector {
 		
 		return c;
 	}
+    
+    public NNumberVector getCopy(){
+        NNumberVector v = new NNumberVector(this.getLength());
+        for(int i=0; i<this.getLength(); i++){
+            NNumber weight = this.getWeight(i);
+            if(weight != null && !weight.isZero()){
+                v.setWeight(i, weight);
+            }
+        }
+        return v;
+    }
     
     @Override
     public String toString(){

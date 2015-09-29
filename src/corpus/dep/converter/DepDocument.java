@@ -10,7 +10,7 @@ import java.util.TreeSet;
 import linearAlgebra.count.CountBaseTensor;
 import linearAlgebra.count.CountTensor;
 
-public class DepDocument { //TODO: a version that creates document vectors on the fly (not create all trees, then convert to document vectors)
+public class DepDocument {
 
 	protected ArrayList<DepTree> depTreeList;
 	

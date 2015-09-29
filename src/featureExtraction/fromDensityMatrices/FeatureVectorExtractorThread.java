@@ -43,22 +43,43 @@ public class FeatureVectorExtractorThread implements Runnable {
 		return name;
 	}
     
+	private ValueMatrix getValueMatrixForDepTree(DepTree depTree){
+		DepNode root = depTree.getRootNode();
+		LinearCombinationMatrix l = root.getRepresentation();
+		
+		//if root has representation return it
+		if(l != null && !l.isZero()){
+			l.normalize(true);
+			return l.toValueMatrix();	
+			
+		//if root has no representation use the mean of all sub root representations
+		}else{
+			LinearCombinationMatrix r = new LinearCombinationMatrix();
+			for(DepNode subRoot : root.getDependents()){
+				LinearCombinationMatrix s = subRoot.getRepresentation();
+				if(s != null && !s.isZero()){
+					r.add(s);
+				}
+			}
+			r.normalize(true);
+			return r.toValueMatrix();
+		}
+	}
+	
 	private FeatureVector getKotlermanFeatureVector(int index, DepTree depTree1, DepTree depTree2){
 		FeatureVector fv = new FeatureVector(index);
 		
         //get value matrix at root (base matrices are sorted by dimension upon creating ValueMatrix)
-        LinearCombinationMatrix l1 = depTree1.getRootNode().getRepresentation();
-        LinearCombinationMatrix l2 = depTree2.getRootNode().getRepresentation();
-		ValueMatrix r1 = l1.toValueMatrix();
-		ValueMatrix r2 = l2.toValueMatrix();
+		ValueMatrix r1 = getValueMatrixForDepTree(depTree1);
+		ValueMatrix r2 = getValueMatrixForDepTree(depTree2);
         
 		//System.out.println("Comparing #" + l1.getName() + " with #" + l2.getName() + "..."); //DEBUG
 		
-        if(r1 == null){
+        if(r1 == null || r1.isZero()){
 			Helper.report("[FeatureVectorExtractor] (" + name + ") Matrix #" + index + ".1 is NULL! Skipping data point #" + index + ".");
 			return null;
 		}
-		if(r2 == null){
+		if(r2 == null || r2.isZero()){
 			Helper.report("[FeatureVectorExtractor] (" + name + ") Matrix #" + index + ".2 is NULL! Skipping data point #" + index + ".");
 			return null;
 		}
@@ -379,8 +400,13 @@ public class FeatureVectorExtractorThread implements Runnable {
 					fv.setIndex(instanceIndex);
 					fv.applyFeatureSelection(featureList);
 
-                }else if(instance instanceof experiment.dep.msrscc.Instance){
-                    //TODO
+                }else if(instance instanceof experiment.dep.four4cl.Instance){
+                    DepTree depTree1 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[0];
+                    DepTree depTree2 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[1];
+                    fv = getKotlermanFeatureVector(instanceIndex, depTree1, depTree2);
+					if(fv == null) fv = new FeatureVector();
+					fv.setIndex(instanceIndex);
+					fv.applyFeatureSelection(featureList);
                 }
 
                 fvc.append(instanceIndex, fv);
