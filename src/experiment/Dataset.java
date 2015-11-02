@@ -23,7 +23,7 @@ public class Dataset {
         indexInstanceMap.put(index, instance);
     }
     
-    public synchronized AbstractInstance getInstance(Integer index){
+    public AbstractInstance getInstance(Integer index){
         return indexInstanceMap.get(index);
     }
 

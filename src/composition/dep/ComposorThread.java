@@ -4,7 +4,6 @@ import cdt.Helper;
 import corpus.dep.converter.DepArc;
 import corpus.dep.converter.DepNode;
 import corpus.dep.converter.DepTree;
-import experiment.Dataset;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
 import innerProduct.InnerProductsCache;
@@ -12,7 +11,6 @@ import java.util.HashMap;
 import linearAlgebra.value.LinearCombinationMatrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
-import space.dep.DepNeighbourhoodSpace;
 import space.dep.DepRelationCluster;
 
 /**
@@ -21,22 +19,18 @@ import space.dep.DepRelationCluster;
  */
 public class ComposorThread implements Runnable {
 
-    private final double log2 = Math.log(2);
-    
     private String name;
     private Composor composor;
     private HashMap<String, DepTree> indexDepTreeMap;
     private HashMap<String, LinearCombinationMatrix> treeRepresentations;
     private InnerProductsCache ipc;
-	private Dataset dataset;
     
-    public ComposorThread(String name, Composor composor, HashMap<String, DepTree> indexDepTreeMap, InnerProductsCache ipc, Dataset dataset){
+    public ComposorThread(String name, Composor composor, HashMap<String, DepTree> indexDepTreeMap, InnerProductsCache ipc){
         this.name = name;
         this.composor = composor;
         this.indexDepTreeMap = indexDepTreeMap;
         treeRepresentations = new HashMap<>();
         this.ipc = ipc;
-		this.dataset = dataset;
     }
     
     /*public ComposorThread(String name, Composor composor, String key, DepTree depTree, InnerProductsCache ipc){
@@ -54,94 +48,34 @@ public class ComposorThread implements Runnable {
 	}
     
     private NNumber similarity(int twIndex1, int twIndex2){
-        String word1 = Vocabulary.getTargetWord(twIndex1).getWord();
-        String word2 = Vocabulary.getTargetWord(twIndex2).getWord();
-        
         //NNumber ip12 = ipc.getInnerProduct(twIndex1, twIndex2, true);
-        NNumber ip12 = ipc.getInnerProduct(word1, word2, true);
+        NNumber ip12 = ipc.getInnerProduct(Vocabulary.getTargetWord(twIndex1).getWord(), Vocabulary.getTargetWord(twIndex2).getWord(), true);
         if(ip12 == null) return null;
         //NNumber ip11 = ipc.getInnerProduct(twIndex1, twIndex1, true);
-        NNumber ip11 = ipc.getInnerProduct(word1, word1, true);
+        NNumber ip11 = ipc.getInnerProduct(Vocabulary.getTargetWord(twIndex1).getWord(), Vocabulary.getTargetWord(twIndex1).getWord(), true);
         if(ip11 == null) return null;
         //NNumber ip22 = ipc.getInnerProduct(twIndex2, twIndex2, true);
-        NNumber ip22 = ipc.getInnerProduct(word2, word2, true);
+        NNumber ip22 = ipc.getInnerProduct(Vocabulary.getTargetWord(twIndex2).getWord(), Vocabulary.getTargetWord(twIndex2).getWord(), true);
         if(ip22 == null) return null;
         
         NNumber similarity = ip12.multiply(ip11.multiply(ip22).sqrt().reciprocal());
         return similarity;
     }
 
-    private void analyse(String index, String phrase, NNumberVector[] vectors, LinearCombinationMatrix[] matrices, InnerProductsCache ipc){
-        int card = 0;
-        double[] sums = new double[3];
-        for(int i=0; i<Vocabulary.getSize(); i++){
-            NNumber weight = vectors[0].getWeight(i);
-            if(weight != null && !weight.isZero()){
-                card++;
-                for(int j=0; j<3; j++){
-                    NNumber ww = vectors[j].getWeight(i);
-                    if(ww != null && !ww.isZero()){
-                        double value = ww.getDoubleValue();
-                        sums[j] += value;
-                    }
-                }
-            }
-        }
-        double[] entropies = new double[3];
-        for(int i=0; i<Vocabulary.getSize(); i++){
-            NNumber weight = vectors[0].getWeight(i);
-            if(weight != null && !weight.isZero()){
-                for(int j=0; j<3; j++){
-                    NNumber ww = vectors[j].getWeight(i);
-                    if(ww != null && !ww.isZero()){
-                        double value = ww.getDoubleValue() / sums[j];
-                        entropies[j] += -value * Math.log(value) / log2;
-                    }
-                }
-            }
-        }
-        
-		
-		double[] renyi2Entropies = new double[3];
-		for(int j=0; j<3; j++){
-			renyi2Entropies[j] = matrices[j].getRenyi2Entropy(ipc);
-		}
-        
-		String[] labels = new String[]{ "weights.sum", "weights.ent", "sims.sum", "sims.ent", "weightedSims.sum", "weightedSims.ent", "dep.renyi", "head.renyi", "phrase.renyi" };
-		double[] values = new double[]{ sums[0], entropies[0], sums[1], entropies[1], sums[2], entropies[2], renyi2Entropies[0], renyi2Entropies[1], renyi2Entropies[2] };
-		
-		experiment.dep.pkc2006.Instance instance = (experiment.dep.pkc2006.Instance) dataset.getInstance(Integer.parseInt(index));
-		//String s = "[ComposorThread] (" + name + ") \"" + phrase + "\": card=" + card;
-		for(int i=0; i<labels.length; i++){
-			//s += ", " + labels[i] + "=" + values[i];
-			instance.fv.setValue(labels[i], values[i]);
-			for(int j=0; j<labels.length; j++){
-				if(i!=j){
-					//s += ", " + labels[i] + "/" + labels[j] + "=" + (values[i] / values[j]);
-					instance.fv.setValue(labels[i] + "/" + labels[j], values[i] / values[j]);
-				}
-			}
-		}
-		//Helper.report(s);
-    }
     
-    
-    private LinearCombinationMatrix applyContext(String index, DepNode headNode, DepRelationCluster drc, LinearCombinationMatrix dependentRepresentation, boolean headHasLexicalRepresentation){
+    private LinearCombinationMatrix applyContext(DepNode headNode, DepRelationCluster drc, LinearCombinationMatrix dependentRepresentation, boolean headHasLexicalRepresentation){
         
         //System.out.println("head has repr = " + headHasLexicalRepresentation); //DEBUG
-        
-        NNumberVector partialTraceDiagonalVector = dependentRepresentation.getPartialTraceDiagonalVector(drc.getModeIndex());
-        //System.out.println("part(" + " " + dependentRepresentation + ") = " + partialTraceVector); //DEBUG
-        partialTraceDiagonalVector.keepOnlyTopNWeights(20); //restore me
-
-        //multiply the weights for alternative heads by their similarities with given head
-        NNumberVector weightedSimilaritiesVector = new NNumberVector(Vocabulary.getSize());
-        NNumberVector similaritiesVector = new NNumberVector(Vocabulary.getSize());
         
         //start the dop to be returned by adding 1 at the head's target word index
         TargetWord head = Vocabulary.getTargetWord(headNode.getWord());
         int headTargetWordIndex = head.getIndex();
-        weightedSimilaritiesVector.setWeight(headTargetWordIndex, NNumber.one());
+        
+        NNumberVector partialTraceDiagonalVector = dependentRepresentation.getPartialTraceDiagonalVector(drc.getModeIndex());
+        //System.out.println("part(" + " " + dependentRepresentation + ") = " + partialTraceVector); //DEBUG
+
+        //multiply the weights for alternative heads by their similarities with given head
+        NNumberVector weightedSimilaritiesVector = new NNumberVector(partialTraceDiagonalVector.getLength());
         
         //if there is a head representation, multiply weights by similarities
         if(headHasLexicalRepresentation){
@@ -153,8 +87,7 @@ public class ComposorThread implements Runnable {
                     NNumber similarity = similarity(headTargetWordIndex, i);
                     if(similarity != null && !similarity.isZero()){
                         //s += "sim(" + headNode.getWord() + ", " + Vocabulary.getTargetWord(i).getWord() + ") = " + similarity + " "; //DEBUG
-                        weightedSimilaritiesVector.add(i, weight.multiply(similarity));
-                        similaritiesVector.add(i, similarity);
+                        weightedSimilaritiesVector.setWeight(i, weight.multiply(similarity));
                     }
                 }
             }
@@ -164,25 +97,6 @@ public class ComposorThread implements Runnable {
         //otherwise use weights not multiplied by similarities (because head representation is replaced by identity matrix)
         LinearCombinationMatrix dop = new LinearCombinationMatrix(weightedSimilaritiesVector);
         dop.setName(headNode.getWord() + "-" + dependentRepresentation.getName());
-        
-        //analysis
-		LinearCombinationMatrix normalisedDop = dop.getCopy();
-		normalisedDop.normalize(true);
-        analyse(
-			index,
-			headNode.getWord() + "-" + dependentRepresentation.getName(),
-				new NNumberVector[]{
-					partialTraceDiagonalVector,
-					similaritiesVector,
-					weightedSimilaritiesVector 
-				},
-				new LinearCombinationMatrix[]{
-					dependentRepresentation,
-					new LinearCombinationMatrix(Vocabulary.getTargetWord(headTargetWordIndex)),
-					normalisedDop
-				},
-				ipc
-		);
         
         return dop;
     }
@@ -196,7 +110,10 @@ public class ComposorThread implements Runnable {
         //check that the ldop exists and is non-zero
         if(tw.hasLexicalRepresentation() && !tw.getLexicalRepresentation().isZero()){
             //return a one hot linear combination matrix
-            dop = new LinearCombinationMatrix(tw);
+            int targetWordIndex = tw.getIndex();
+            dop = new LinearCombinationMatrix();
+            dop.setName(tw.getWord());
+            dop.setWeight(targetWordIndex, NNumber.one());
             nodeHasLexicalRepresentation = true;
         }else{
             dop = null;
@@ -212,13 +129,13 @@ public class ComposorThread implements Runnable {
                     LinearCombinationMatrix dependentNodeRepresentation = getRepresentation(index, dependentNode);
                     //only process dependent that have a representation
                     if(dependentNodeRepresentation != null && !dependentNodeRepresentation.isZero()){
-                        LinearCombinationMatrix ac = applyContext(index, node, depArc.drc, dependentNodeRepresentation, nodeHasLexicalRepresentation);
+                        LinearCombinationMatrix ac = applyContext(node, depArc.drc, dependentNodeRepresentation, nodeHasLexicalRepresentation);
                         if(dop == null){
                             dop = ac;
                         }else if(ac != null){
                             //String s = dop + " + ac(" + dependentNode.getWord() + ") " + ac;
                             dop.add(ac);
-                            //Helper.report("[ComposorThread] (" + name + ") " + s + " = " + dop); //DEBUG
+                            //System.out.println(s + " = " + dop); //DEBUG
                             //Helper.report("[ComposorThread] (" + name + ") #" + index + " composing <" + node.getWord() + ", " + depArc.drc.getName() + ", " + dependentNode.getWord() + ">");
                         }
                     }
@@ -229,12 +146,11 @@ public class ComposorThread implements Runnable {
 
 		node.setRepresentation(dop);
         //Helper.report("[ComposorThread] (" + name + ") #" + delme + " repr(" + node.getWord() + ") = " + dop); //DEBUG
-        
         return dop;
     }
     
     private LinearCombinationMatrix getRepresentation(String index, DepTree depTree){
-            return getRepresentation(index, depTree.getRootNode());
+        return getRepresentation(index, depTree.getRootNode());
     }
     
     public void composeTrees(){

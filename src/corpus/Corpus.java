@@ -56,9 +56,4 @@ public class Corpus {
         return totalWordCount;
     }
     
-    public static String getString(){
-        String s = "Corpus \"" + name + "\":\ntotal word count=" + totalWordCount;
-        return s;
-    }
-    
 }

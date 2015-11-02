@@ -293,7 +293,7 @@ public class FeatureVectorsCollection {
             
 			//write the schema
 			Iterator<String> it = featureNamesList.iterator();
-			String featureName;
+			String featureName = null;
 			while(it.hasNext()){
 				featureName = it.next();
 				if(it.hasNext()){
@@ -301,14 +301,10 @@ public class FeatureVectorsCollection {
 					out.write("@attribute \"" + featureName + "\" real\n");
 				}else{
 					//for final attribute
-					if(classNames == null){
-						out.write("@attribute \"" + featureName + "\" real\n");
-					}else{
-						String finalAttributeString = "@attribute \"" + featureName + "\" {" + classNames[0];
-						for(int i=1; i<classNames.length; i++) finalAttributeString += "," + classNames[i];
-						finalAttributeString += "}";
-						out.write(finalAttributeString + "\n");
-					}
+					String finalAttributeString = "@attribute \"" + featureName + "\" {" + classNames[0];
+					for(int i=1; i<classNames.length; i++) finalAttributeString += "," + classNames[i];
+					finalAttributeString += "}";
+					out.write(finalAttributeString + "\n");
 				}
 			}
             
@@ -336,9 +332,6 @@ public class FeatureVectorsCollection {
 	}
 	public void exportToArffFile(File arffFile, String[] classNames){
 		exportToArffFile(arffFile, null, classNames);
-	}
-	public void exportToArffFile(File arffFile){
-		exportToArffFile(arffFile, null, null);
 	}
 
     

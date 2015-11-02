@@ -37,9 +37,9 @@ public class Instance extends AbstractInstance {
         return labelIndex;
     }
     
-    //index must be in [0;4]
+    //index starts with 1
     public DepTree getDepSentence(int index){
-        return depSentences[index];
+        return depSentences[index - 1];
     }
     
     public DepTree getLabelDepSentence(){
@@ -62,15 +62,15 @@ public class Instance extends AbstractInstance {
                 
                 matcher = sentencePattern.matcher(line);
                 if(matcher.find()){
-                    int sentenceIndex = Integer.parseInt(matcher.group(1)) - 1;
+                    int sentenceIndex = Integer.parseInt(matcher.group(1));
                     String variable = matcher.group(2);
-                    instance.variables[sentenceIndex] = variable;
+                    instance.variables[sentenceIndex-1] = variable;
                     
                     DepTree depSentence = DepTree.importFromReader(in, "</sentence>");
                     if(depSentence == null){
                         break;
                     }else{
-                        instance.depSentences[sentenceIndex] = depSentence;
+                        instance.depSentences[sentenceIndex-1] = depSentence;
                     }
                 }
             }

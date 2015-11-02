@@ -101,9 +101,6 @@ public class Conll2015 extends DepExperiment {
         DepNeighbourhoodSpace.saveToFile(spaceFile);
         DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
         
-        //experiment
-        Conll2015 exp = new Conll2015();
-		
         //gather and save joint counts
         //File jdopsFolder = new File(projectFolder, "experiments/conll2015/jdops");
 		//exp.extractAndSaveJointCountsFromCorpus(jdopsFolder, 8, 1000);
@@ -111,28 +108,31 @@ public class Conll2015 extends DepExperiment {
 		//associationate jdops to ldops
         //File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
         //DepMarginalCounts dmc = DepMarginalCounts.importFromFile(marginalCountsFile);
-        //int delta = 100;
+        //int delta = 5000;
         //int ldopCardinality = 2000;
         //SppmiFunction sf = new SppmiFunction(dmc, delta, ldopCardinality);
         File ldopsFolder = new File(projectFolder, "experiments/conll2015/ldops");
         //exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
         
         //inner products cache
-        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/innerProducts.conll2015.txt");
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/innerProducts.txt");
         InnerProductsCache ipc = new InnerProductsCache();
         ipc.importFromFile(innerProductsFile);
 
+        //experiment
+        Conll2015 exp = new Conll2015();
+		
 		//composition
         File datasetFile = new File(projectFolder, "datasets/conll2015/trainAndDevAndTest.implicitOnly");
 		//File datasetFile = new File(projectFolder, "datasets/conll2015/tiny");
         exp.importDataset(datasetFile);
         exp.importMatrices(ldopsFolder, false);
 		File sdopsFolder = new File(projectFolder, "experiments/conll2015/sdops");
-		int saveSdopsEvery = 50;
-		int amountOfTreesPerThread = 100;
-		exp.composeTrees(ipc, sdopsFolder, innerProductsFile, amountOfTreesPerThread, saveSdopsEvery);
-		exp.saveSdopsToFiles(sdopsFolder);
-		ipc.saveToFile(innerProductsFile);
+		//int saveSdopsEvery = 50;
+		//int amountOfTreesPerThread = 100;
+		//exp.composeTrees(ipc, sdopsFolder, innerProductsFile, amountOfTreesPerThread, saveSdopsEvery);
+		//exp.saveSdopsToFiles(sdopsFolder);
+		//ipc.saveToFile(innerProductsFile);
 
 		//feature extraction
 		exp.importSdopsFromFiles(sdopsFolder);

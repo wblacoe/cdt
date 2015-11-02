@@ -144,9 +144,6 @@ public class NNumber implements Comparable {
 	public double getDoubleValue(){
 		return Double.NaN;
 	}
-    public float getFloatValue(){
-        return (float) getDoubleValue();
-    }
 	public boolean isInfinite(){
 		return false;
 	}

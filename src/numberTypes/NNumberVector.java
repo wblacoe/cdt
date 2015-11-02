@@ -1,7 +1,6 @@
 package numberTypes;
 
 import experiment.dep.Vocabulary;
-import java.util.TreeSet;
 
 /**
  *
@@ -145,27 +144,6 @@ public class NNumberVector {
             }
         }
         return v;
-    }
-    
-    public void keepOnlyWeightsLargerOrEqualTo(NNumber threshold){
-        for(int i=0; i<getLength(); i++){
-            NNumber weight = getWeight(i);
-            if(weight != null && weight.compareTo(threshold) < 0){
-                setWeight(i, null);
-            }
-        }
-    }
-    
-    public void keepOnlyTopNWeights(int n){
-        TreeSet<NNumber> topNWeights = new TreeSet<>();
-        for(int i=0; i<getLength(); i++){
-            NNumber weight = getWeight(i);
-            if(weight != null){
-                topNWeights.add(weight);
-                while(topNWeights.size() > n) topNWeights.pollFirst();
-            }
-        }
-        keepOnlyWeightsLargerOrEqualTo(topNWeights.first());
     }
     
     @Override

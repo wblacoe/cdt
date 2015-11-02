@@ -1,9 +1,7 @@
 package linearAlgebra;
 
-import cdt.Helper;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,14 +66,4 @@ public class Matrix {
         return m;
     }
     
-    public void saveToFile(File file){
-        try{
-            BufferedWriter out = Helper.getFileWriter(file);
-            saveToWriter(out);
-            out.close();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-
 }

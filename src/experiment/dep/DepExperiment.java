@@ -47,21 +47,10 @@ public class DepExperiment extends Experiment {
 				DepTree depTree2 = ((experiment.dep.four4cl.Instance) instance).sentenceTrees[1];
 				indexDepTreesMap.put(instanceIndex + ".1", depTree1);
 				indexDepTreesMap.put(instanceIndex + ".2", depTree2);
-			}else if(instance.getClass().equals(experiment.dep.msrscc.Instance.class)){
-                for(int i=0; i<5; i++){
-                    DepTree depTree = ((experiment.dep.msrscc.Instance) instance).getDepSentence(i);
-                    indexDepTreesMap.put(instanceIndex + "." + (i + 1), depTree);
-                }
-            }else if(instance.getClass().equals(experiment.dep.pkc2006.Instance.class)){
-				experiment.dep.pkc2006.Instance pkc2006Instance = ((experiment.dep.pkc2006.Instance) instance);
-				DepTree depTree = pkc2006Instance.toDepTree();
-				if(depTree != null){
-					indexDepTreesMap.put("" + pkc2006Instance.getIndex(), depTree);
-				}
 			}
         }
         
-        Composor cmp = new Composor(ipc, sdopsFolder, innerProductsFile, dataset);
+        Composor cmp = new Composor(ipc, sdopsFolder, innerProductsFile);
 		indexSdopsMap.putAll(cmp.composeTrees(indexDepTreesMap, amountOfTreesPerThread, saveSdopsEvery));
     }
     

@@ -12,12 +12,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import linearAlgebra.Matrix;
 import linearAlgebra.count.CountMatrix;
 import linearAlgebra.value.ValueMatrix;
-import space.dep.DepNeighbourhoodSpace;
 
 /**
  *
@@ -85,31 +83,11 @@ public class Experiment {
         }
     }
     
-    private HashMap<String, CountMatrix> importJdopsFromReader(BufferedReader in, int amount) throws IOException{
-        HashMap<String, CountMatrix> jdops = new HashMap<>();
-        for(int i=0; i<amount; i++){
-            Matrix m = Matrix.importFromReader(in);
-            if(m == null){
-                break;
-            }else{
-                CountMatrix cm = (CountMatrix) m;
-                //if(DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationClusterName("obj-1").hasContextWord(cm.getName())){ //DELME
-                    jdops.put(cm.getName(), cm);
-                //}
-            }
-        }
-        return jdops;
-    }
-    
 	//imports jdops from disk, applies association function, saves ldops to disk, attaches ldops to vocabulary
     public void importAssociationateAndSaveMatrices(File jdopsFolder, DepMarginalCounts dmc, AssociationFunction af, File ldopsFolder){
-        //List<String> words = Arrays.asList(new String[]{ "see", "write", "buy", "kick", "book" }); //remove me
-        int amountOfThreads = Math.min(10, Helper.getAmountOfCores());
-        
 		File[] jdopsFiles = jdopsFolder.listFiles();
         for(File jdopsFile : jdopsFiles){
             Helper.report("[Experiment] Processing jdops file \"" + jdopsFile.getName() + "\"...");
-            int jdopsCounter = 0, ldopsCounter = 0;
             try{
                 BufferedReader in = Helper.getFileReader(jdopsFile);
                 File ldopsFile = new File(ldopsFolder, jdopsFile.getName());
@@ -117,24 +95,18 @@ public class Experiment {
 
                 int counter = 0;
                 while(true){
-                    //Matrix m = Matrix.importFromReader(in);
-                    //if(m == null) break;
-                    //CountMatrix cm = (CountMatrix) m;
-                    //if(!words.contains(cm.getName())) continue; //remove me
-                    HashMap<String, CountMatrix> jdops = importJdopsFromReader(in, amountOfThreads);
-                    if(jdops.isEmpty()) break;
-                    jdopsCounter += jdops.size();
-                    HashMap<String, ValueMatrix> ldops = af.compute(jdops);
-                    if(ldops != null){
-                        for(String ldopName : ldops.keySet()){
-                            ValueMatrix ldop = ldops.get(ldopName);
-                            Vocabulary.getTargetWord(ldopName).setLexicalRepresentation(ldop);
-                            ldop.saveToWriter(out);
-                            counter++;
-                            ldopsCounter++;
-                            if(counter % 10 == 0) Helper.report("Finished computing " + counter + " LDops");
-                        }
+                    Matrix m = Matrix.importFromReader(in);
+                    if(m == null) break;
+                    CountMatrix cm = (CountMatrix) m;
+                    ValueMatrix vm = (ValueMatrix) af.compute(cm, m.getName());
+                    if(vm == null){
+                        //System.out.println("d"); //DEBUG
+                    }else{
+						Vocabulary.getTargetWord(m.getName()).setLexicalRepresentation(vm);
+                        vm.saveToWriter(out);
                     }
+                    counter++;
+                    if(counter % 100 == 0) Helper.report("Finished processing " + counter + " matrices");
                 }
                 
                 in.close();
@@ -142,7 +114,7 @@ public class Experiment {
             }catch(IOException e){
                 e.printStackTrace();
             }
-            Helper.report("...Finished processing " + ldopsCounter + "/" + jdopsCounter + " jdops from \"" + jdopsFile.getName() + "\"");
+            Helper.report("...Finished processing jdops file \"" + jdopsFile.getName());
         }
     }
     
