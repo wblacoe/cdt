@@ -304,5 +304,14 @@ public class DepTree {
 		
 		return depTree;
     }
+	
+	public void addNode(int wordInSentenceNumber, DepNode node){
+		wordInSentenceNumberDepNodeMap.put(wordInSentenceNumber, node);
+	}
+	
+	public void setRootNode(int wordInSentenceNumber){
+		root = wordInSentenceNumberDepNodeMap.get(wordInSentenceNumber);
+		root.setIsRoot(true);
+	}
     
 }

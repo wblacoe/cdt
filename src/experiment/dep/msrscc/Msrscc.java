@@ -1,9 +1,11 @@
 package experiment.dep.msrscc;
 
 import cdt.Helper;
+import corpus.Corpus;
 import corpus.associationFunction.SppmiFunction;
 import corpus.dep.converter.DepTree;
 import corpus.dep.marginalizer.DepMarginalCounts;
+import experiment.Dataset;
 import experiment.dep.DepExperiment;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
@@ -13,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import linearAlgebra.value.LinearCombinationMatrix;
+import linearAlgebra.value.ValueBaseMatrix;
+import linearAlgebra.value.ValueMatrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
 import space.dep.DepNeighbourhoodSpace;
@@ -25,7 +29,7 @@ import space.dep.DepRelationCluster;
 public class Msrscc extends DepExperiment {
 
     public Msrscc(){
-
+        super();
     }
     
     protected HashMap<Integer, DepTree> getIntegerDepTreeMap(){
@@ -45,6 +49,7 @@ public class Msrscc extends DepExperiment {
     public void importDataset(File datasetFile){
         Helper.report("[Msrscc] Importing dataset from " + datasetFile.getAbsolutePath() + "...");
         
+        dataset = new Dataset();
         try{
             BufferedReader in = Helper.getFileReader(datasetFile);
             
@@ -116,6 +121,7 @@ public class Msrscc extends DepExperiment {
 		}
 
 		LinearCombinationMatrix c = new LinearCombinationMatrix(weightedSimilaritiesVector);
+        c.normalize(true);
 		c.setName(headString + "_" + dependentRepresentation.getName());
 		return c;
 	}
@@ -136,8 +142,8 @@ public class Msrscc extends DepExperiment {
         Msrscc exp = new Msrscc();
 
         //gather and save joint counts
-        File jdopsFolder = new File(projectFolder, "experiments/msrscc/jdops");
-		exp.extractAndSaveJointCountsFromCorpus(jdopsFolder, 8, 1000);
+        //File jdopsFolder = new File(projectFolder, "experiments/msrscc/jdops");
+		//exp.extractAndSaveJointCountsFromCorpus(jdopsFolder, 8, 1000);
 		/*HashSet<String> targetWordsForArticle = new HashSet<>();
 		targetWordsForArticle.addAll(Arrays.asList(
 			//new String[]{ "catch", "throw", "ball", "party", "blue", "white", "red", "yellow" }
@@ -149,23 +155,24 @@ public class Msrscc extends DepExperiment {
 		*/
         
 		//associationate jdops to ldops
-        File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
+        /*File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
         DepMarginalCounts dmc = DepMarginalCounts.importFromFile(marginalCountsFile);
         int delta = 5000;
         int ldopCardinality = 2000;
         SppmiFunction sf = new SppmiFunction(dmc, delta, ldopCardinality);
 		File ldopsFolder = new File(projectFolder, "experiments/msrscc/ldops");
 		exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
-        //File ldopsFolderUgly = new File(projectFolder, "experiments/msrscc/ldops.ugly");
-        //File ldopsFolderPretty = new File(projectFolder, "experiments/msrscc/ldops.pretty");
-		//Helper.prettyPrint = false;
-        //exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolderUgly);
-        //Helper.prettyPrint = true;
-        //exp.saveMatrices(ldopsFolderPretty);
-        
-        /*
-		File ldopsFolderUgly = new File(projectFolder, "experiments/msrscc/ldops.ugly");
+        */
+        /*File ldopsFolderUgly = new File(projectFolder, "experiments/msrscc/ldops.ugly");
         File ldopsFolderPretty = new File(projectFolder, "experiments/msrscc/ldops.pretty");
+		Helper.prettyPrint = false;
+        exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolderUgly);
+        Helper.prettyPrint = true;
+        exp.saveMatrices(ldopsFolderPretty);
+        */
+        
+		File ldopsFolderUgly = new File(projectFolder, "experiments/msrscc/forArticle/ldops.ugly");
+        File ldopsFolderPretty = new File(projectFolder, "experiments/msrscc/forArticle/ldops.pretty");
 		exp.importMatrices(ldopsFolderUgly, false);
 
 		File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/innerProducts.txt");
@@ -179,16 +186,52 @@ public class Msrscc extends DepExperiment {
         LinearCombinationMatrix catchYellowBallL = compose(ipc, "catch", DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationClusterName("obj-1"), yellowBallL);
         ValueMatrix catchYellowBallV = catchYellowBallL.toValueMatrix();
 
+        ipc.saveToFile(innerProductsFile);
         Helper.prettyPrint = false;
         yellowBallV.saveToFile(new File(ldopsFolderUgly, "yellow_ball"));
         catchYellowBallV.saveToFile(new File(ldopsFolderUgly, "catch_yellow_ball"));
         Helper.prettyPrint = true;
         yellowBallV.saveToFile(new File(ldopsFolderPretty, "yellow_ball"));
         catchYellowBallV.saveToFile(new File(ldopsFolderPretty, "catch_yellow_ball"));
-		*/
+		
     }
     
-    public static void main(String[] args){
+    public static void main2(String[] args){
+
+        //space
+        File projectFolder = new File("/local/william");
+        DepNeighbourhoodSpace.setProjectFolder(projectFolder);
+        File spaceFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/msrscc.space");
+        DepNeighbourhoodSpace.importFromFile(spaceFile);
+        DepNeighbourhoodSpace.saveToFile(spaceFile);
+        DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
+        
+        //experiment
+        Msrscc exp = new Msrscc();
+
+        File ldopsFolder = new File(projectFolder, "experiments/msrscc/ldops");
+        exp.importMatrices(ldopsFolder, false);
+
+        File outputFolderL = new File(projectFolder, "experiments/msrscc/output/lm");
+        File outputFolderV = new File(projectFolder, "experiments/msrscc/output/vm");
+        
+        String[] heads = new String[]{ "buy", "sell", "read", "throw", "kick" };
+        double[] weights = new double[]{ 0.1, 0.2, 0.3, 0.35, 0.05 };
+        
+        int i=0;
+        NNumberVector v = new NNumberVector(Vocabulary.getSize());
+        for(String head : heads){
+            TargetWord tw = Vocabulary.getTargetWord(head);
+            LinearCombinationMatrix lm = new LinearCombinationMatrix(tw);
+            v.add(lm.getWeights().times(NNumber.create(weights[i])));
+            i++;
+        }
+        (new LinearCombinationMatrix(v)).saveToFile(new File(outputFolderL, "sum"));
+        (new LinearCombinationMatrix(v)).toValueMatrix().saveToFile(new File(outputFolderV, "sum"));
+        
+    }
+    
+    public static void main3(String[] args){
 
         //space
         File projectFolder = new File("/local/william");
@@ -202,8 +245,136 @@ public class Msrscc extends DepExperiment {
         Msrscc exp = new Msrscc();
 
         //
+        File datasetFile = new File(projectFolder, "datasets/msrscc/debug2.parsed");
+        exp.importDataset(datasetFile);
+        
         File ldopsFolder = new File(projectFolder, "experiments/msrscc/ldops");
-        exp.importMatrices(ldopsFolder, false);
+        exp.importMatrices(ldopsFolder, true);
+        
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/innerProducts.txt");
+        InnerProductsCache ipc = new InnerProductsCache();
+		ipc.importFromFile(innerProductsFile);
+        
+        File sdopsFolder = new File(projectFolder, "experiments/msrscc/sdops");
+        exp.composeTrees(ipc, sdopsFolder, innerProductsFile, 1, 1);
+    }
+
+    public static void mainDebug(String[] args){
+
+        //space
+        File projectFolder = new File("/local/william");
+        DepNeighbourhoodSpace.setProjectFolder(projectFolder);
+        File spaceFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/msrscc.space");
+        DepNeighbourhoodSpace.importFromFile(spaceFile);
+        DepNeighbourhoodSpace.saveToFile(spaceFile);
+        DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
+        
+        //experiment
+        Msrscc exp = new Msrscc();
+
+        //
+        File datasetFile = new File(projectFolder, "datasets/msrscc/debug2.parsed");
+        exp.importDataset(datasetFile);
+        
+        File ldopsFolder = new File(projectFolder, "experiments/msrscc/ldops");
+        exp.importMatrices(ldopsFolder, true);
+        
+        //File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/innerProducts.txt");
+        InnerProductsCache ipc = new InnerProductsCache();
+		//ipc.importFromFile(innerProductsFile);
+        
+        //File sdopsFolder = new File(projectFolder, "experiments/msrscc/sdops");
+        //exp.composeTrees(ipc, sdopsFolder, innerProductsFile, 1, 1);
+        
+        String word = args[0];
+        ValueMatrix ldop = (ValueMatrix) Vocabulary.getTargetWord(word).getLexicalRepresentation();
+        
+        NNumber ip = null;
+        
+        int counter = 0;
+        for(int i1=0; i1<ldop.getCardinality(); i1++){
+            ValueBaseMatrix bm1 = ldop.getBaseMatrix(i1);
+            for(int i2=0; i2<ldop.getCardinality(); i2++){
+                ValueBaseMatrix bm2 = ldop.getBaseMatrix(i2);
+                
+                //left
+                NNumber ipLeft = bm1.getLeftBaseTensor().innerProduct(bm2.getLeftBaseTensor());
+                if(ipLeft == null) continue;
+
+                //right
+                NNumber ipRight = bm1.getRightBaseTensor().innerProduct(bm2.getRightBaseTensor());
+                if(ipRight == null) continue;
+
+                NNumber innerIp = ipLeft.multiply(ipRight).multiply(bm1.getValue()).multiply(bm2.getValue());
+                if(ip == null){
+                    ip = innerIp;
+                }else{
+                    ip = ip.add(innerIp);
+                }
+                
+                String s = counter + ": ip(" + bm1.getLeftBaseTensor() + ", " + bm2.getLeftBaseTensor() + ")=" + ipLeft.getFloatValue();
+                s += "; ip(" + bm1.getRightBaseTensor() + ", " + bm2.getRightBaseTensor() + ")=" + ipRight.getFloatValue();
+                s += "; value1=" + bm1.getValue().getFloatValue() + ", value2=" + bm2.getValue().getFloatValue();
+                s += "; iip=" + innerIp.getFloatValue();
+                s += "; sum=" + ip.getFloatValue();
+                System.out.println(s);
+                
+                
+                
+                counter++;
+            }
+        }
+        
+        System.out.println("ip=" + (ip == null ? "0.0" : ip.getFloatValue()));
     }
     
+    public static void mainCorrectedAssociationFunction(String[] args){
+        //space
+        File projectFolder = new File("/local/william");
+        DepNeighbourhoodSpace.setProjectFolder(projectFolder);
+        File spaceFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/msrscc.space");
+        DepNeighbourhoodSpace.importFromFile(spaceFile);
+        DepNeighbourhoodSpace.saveToFile(spaceFile);
+        DepNeighbourhoodSpace.setNumberType(NNumber.CUSTOM_BASE_FLOAT);
+        
+        //experiment
+        Msrscc exp = new Msrscc();
+
+        //gather and save joint counts
+        File jdopsFolder = new File(projectFolder, "experiments/msrscc/jdops");
+		//exp.extractAndSaveJointCountsFromCorpus(jdopsFolder, 8, 1000);
+        
+		//associationate jdops to ldops
+        File marginalCountsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/marginalcounts.gz");
+        DepMarginalCounts dmc = DepMarginalCounts.importFromFile(marginalCountsFile);
+        int delta = 10;
+        int ldopCardinality = 2000;
+        SppmiFunction sf = new SppmiFunction(dmc, delta, ldopCardinality);
+		File ldopsFolder = new File(projectFolder, "experiments/msrscc/ldops");
+		exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolder);
+        
+        /*File ldopsFolderUgly = new File(projectFolder, "experiments/msrscc/ldops.ugly");
+        File ldopsFolderPretty = new File(projectFolder, "experiments/msrscc/ldops.pretty");
+		Helper.prettyPrint = false;
+        exp.importAssociationateAndSaveMatrices(jdopsFolder, dmc, sf, ldopsFolderUgly);
+        Helper.prettyPrint = true;
+        exp.saveMatrices(ldopsFolderPretty);
+        exp.importMatrices(ldopsFolderUgly, true);
+        */
+        
+        File innerProductsFile = new File(projectFolder, "preprocessed/ukwac.depParsed/5up5down/msrscc/innerProducts.txt");
+        InnerProductsCache ipc = new InnerProductsCache();
+		ipc.importFromFile(innerProductsFile);
+
+        File datasetFile = new File(projectFolder, "datasets/msrscc/debug2.parsed");
+        exp.importDataset(datasetFile);
+        
+        File sdopsFolder = new File(projectFolder, "experiments/msrscc/sdops");
+        exp.composeTrees(ipc, sdopsFolder, innerProductsFile, 1, 1);
+    }
+    
+    public static void main(String[] args){
+        mainCorrectedAssociationFunction(args);
+    }
+
 }

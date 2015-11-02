@@ -2,6 +2,7 @@ package composition.dep;
 
 import cdt.Helper;
 import corpus.dep.converter.DepTree;
+import experiment.Dataset;
 import innerProduct.InnerProductsCache;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -22,13 +23,15 @@ public class Composor {
     private HashMap<String, LinearCombinationMatrix> treeRepresentations;
     private InnerProductsCache ipc;
 	private File sdopsFolder, innerProductsFile;
+	private Dataset dataset;
     
-    public Composor(InnerProductsCache ipc, File sdopsFolder, File innerProductsFile){
+    public Composor(InnerProductsCache ipc, File sdopsFolder, File innerProductsFile, Dataset dataset){
         threads = new HashSet<>();
         treeRepresentations = new HashMap<>();
         this.ipc = ipc;
 		this.sdopsFolder = sdopsFolder;
 		this.innerProductsFile = innerProductsFile;
+		this.dataset = dataset;
     }
     
     
@@ -49,7 +52,7 @@ public class Composor {
         
         //run composor threads
 		for(int i=0; i<amountOfCores; i++){
-			ComposorThread thread = new ComposorThread("thread" + i, this, allSubDatasets.get(i), ipc.getCopy());
+			ComposorThread thread = new ComposorThread("thread" + i, this, allSubDatasets.get(i), ipc.getCopy(), dataset);
 			threads.add(thread);
 			(new Thread(thread)).start();
 		}
@@ -66,15 +69,17 @@ public class Composor {
         return treeRepresentations;
     }
 	
-	private void saveAllTreeRepresentationsToFile(File sdopsFile){
+	private synchronized void saveAllTreeRepresentationsToFile(File sdopsFile, File sdopsValueFile){
 		Helper.report("[Composor] Saving " + treeRepresentations.size() + " SDops to " + sdopsFile.getAbsolutePath() + "...");
 		
 		try{
 			BufferedWriter out = Helper.getFileWriter(sdopsFile);
+            BufferedWriter out2 = Helper.getFileWriter(sdopsValueFile);
 			
 			for(String key : treeRepresentations.keySet()){
 				Matrix m = treeRepresentations.get(key);
 				m.saveToWriter(out);
+                ((LinearCombinationMatrix) m).toValueMatrix().saveToWriter(out2);
 			}
 			
 			out.close();
@@ -97,6 +102,8 @@ public class Composor {
 		}
 		Arrays.sort(keys);
 		*/
+        
+        for(String key : depTrees.keySet()) System.out.println("composing sentence " + key + "..."); //DEBUG
 		
 		Iterator<String> it = depTrees.keySet().iterator();
 
@@ -113,7 +120,7 @@ public class Composor {
 						String index = it.next();
 						indexDepTreeMap.put(index, depTrees.get(index));
 					}
-                    ComposorThread thread = new ComposorThread("thread" + threadCounter, this, indexDepTreeMap, ipc.getCopy());
+                    ComposorThread thread = new ComposorThread("thread" + threadCounter, this, indexDepTreeMap, ipc.getCopy(), dataset);
 					threads.add(thread);
 					(new Thread(thread)).start();
 					
@@ -123,7 +130,8 @@ public class Composor {
 				wait();
 				if(treeRepresentations.size() >= saveSdopsEvery){
 					//flush out all tree representations computed so far (clear up memory)
-					saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz"));
+					//saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz")); //restore me
+                    saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz"), new File(new File(sdopsFolder, "value"), "sdops." + sdopsFileCounter + ".gz"));
 					//sdopsCounter += treeRepresentations.size();
 					treeRepresentations.clear();
 					sdopsFileCounter++;

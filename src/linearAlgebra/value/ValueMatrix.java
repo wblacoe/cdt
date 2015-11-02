@@ -4,7 +4,6 @@ import cdt.Helper;
 import experiment.dep.Vocabulary;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -128,16 +127,21 @@ public class ValueMatrix extends Matrix {
 	*/
     
     public void normalize(){
-        NNumber trace = trace();
-        if(trace != null){
-            multiply(trace.reciprocal());
+        if(!isZero()){
+            NNumber trace = trace();
+            if(trace != null){
+                multiply(trace.reciprocal());
+            }
         }
     }
     
     public void multiply(NNumber factor){
         for(int i=0; i<getCardinality(); i++){
             ValueBaseMatrix bm = valueBaseMatrices[i];
-            bm.setValue(bm.getValue().multiply(factor));
+            NNumber value;
+            if(bm != null && (value = bm.getValue()) != null && !value.isZero()){
+                valueBaseMatrices[i] = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), value.multiply(factor));
+            }
         }
     }
     
@@ -1035,22 +1039,12 @@ public class ValueMatrix extends Matrix {
         out.write("<basematrices>\n");
         for(int i=0; i<getCardinality(); i++){
             ValueBaseMatrix bm = valueBaseMatrices[i];
-            bm.exportToWriter(out);
+            if(bm != null) bm.exportToWriter(out);
         }
         out.write("</basematrices>\n");
         out.write("</matrix>\n");
     }
     
-    public void saveToFile(File file){
-        try{
-            BufferedWriter out = Helper.getFileWriter(file);
-            saveToWriter(out);
-            out.close();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-	
     @Override
     public String toString(){
         String s = "value matrix, name=\"" + name + "\", card=" + getCardinality() + ", trace=" + trace() + "\npartials.cardPerMode:";

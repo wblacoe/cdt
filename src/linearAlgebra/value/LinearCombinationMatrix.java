@@ -1,6 +1,5 @@
 package linearAlgebra.value;
 
-import experiment.TargetElements;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
 import innerProduct.InnerProductsCache;
@@ -11,6 +10,7 @@ import java.util.TreeMap;
 import linearAlgebra.Matrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
+import space.dep.DepNeighbourhoodSpace;
 
 /**
  * expresses linear combination of subordinate matrices.
@@ -19,7 +19,9 @@ import numberTypes.NNumberVector;
  * @author wblacoe
  */
 public class LinearCombinationMatrix extends Matrix {
-    
+
+	private static final double log2 = Math.log(2);
+	
     //array indices correspond to target element indices
     private NNumberVector weights;
     
@@ -65,7 +67,7 @@ public class LinearCombinationMatrix extends Matrix {
 
     //returns linear combination of partial trace vectors of subordinate matrices
     public NNumberVector getPartialTraceDiagonalVector(int modeIndex){
-        NNumberVector partialTraceDiagonalVector = new NNumberVector(TargetElements.getSize());
+        NNumberVector partialTraceDiagonalVector = new NNumberVector(Vocabulary.getSize());
         
         for(int i=0; i<Vocabulary.getSize(); i++){
             NNumber weight = weights.getWeight(i);
@@ -122,7 +124,7 @@ public class LinearCombinationMatrix extends Matrix {
         NNumber ip = null;
         
         for(int i=0; i<Vocabulary.getSize(); i++){
-            NNumber weight1 = weights.getWeight(i);
+            NNumber weight1 = getWeight(i);
             if(weight1 == null || weight1.isZero()) continue;
             TargetWord tw1 = Vocabulary.getTargetWord(i);
             for(int j=0; j<Vocabulary.getSize(); j++){
@@ -151,6 +153,12 @@ public class LinearCombinationMatrix extends Matrix {
     public ValueMatrix toValueMatrix(){
         TreeMap<ValueBaseMatrix, ValueBaseMatrix> collection = new TreeMap<>();
         
+        //save linear combination of partial trace diagonal vectors here
+        NNumberVector[] partials = new NNumberVector[DepNeighbourhoodSpace.getOrder() + 1];
+        for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+            partials[m] = new NNumberVector(Vocabulary.getSize());
+        }
+        
         for(int i=0; i<Vocabulary.getSize(); i++){
             NNumber weight = weights.getWeight(i);
             if(weight != null && !weight.isZero()){
@@ -168,10 +176,13 @@ public class LinearCombinationMatrix extends Matrix {
 						collection.put(newBm, newBm);
 					}
 				}
+                for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+                    partials[m].add(twMatrix.getPartialTraceDiagonalVector(m).times(weight));
+                }
 			}
         }
         
-        ValueMatrix m = new ValueMatrix(collection.size());
+        ValueMatrix vm = new ValueMatrix(collection.size());
         int i=0;
         /*while(true){
 			Entry<ValueBaseMatrix, ValueBaseMatrix> entry = collection.pollFirstEntry();
@@ -184,14 +195,26 @@ public class LinearCombinationMatrix extends Matrix {
 		*/
 		for(ValueBaseMatrix bm : collection.keySet()){
 			if(bm != null){
-				m.setBaseMatrix(i, bm);
+				vm.setBaseMatrix(i, bm);
 				i++;
 			}
 		}
-        m.setName(name);
+        vm.setName(name);
         
-        return m;
+        for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+            vm.setPartialTraceDiagonalVectors(partials);
+        }
+        
+        return vm;
     }
+	
+	public LinearCombinationMatrix getCopy(){
+		return new LinearCombinationMatrix(weights.getCopy());
+	}
+	
+	public double getRenyi2Entropy(InnerProductsCache ipc){
+		return -Math.log(this.innerProduct(this, ipc).getDoubleValue()) / log2;
+	}
 
     @Override
     public String toString(){
