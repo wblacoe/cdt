@@ -108,7 +108,7 @@ public class InnerProductsCache {
     }
     */
     
-    public NNumber getInnerProduct(String word1, String word2, boolean computeIfNull){
+    public synchronized NNumber getInnerProduct(String word1, String word2, boolean computeIfNull){
         String key = (word1.compareTo(word2) < 0 ? word1 + "_#_" + word2 : word2 + "_#_" + word1);
         NNumber ip = innerProducts.get(key);
         
@@ -119,6 +119,7 @@ public class InnerProductsCache {
             ValueMatrix m2 = (ValueMatrix) Vocabulary.getTargetWord(word2).getLexicalRepresentation();
             if(m2 == null) return null;
             ip = m1.innerProduct(m2);
+			//System.out.println("tr(" + word1 + ")=" + m1.trace().getDoubleValue() + ", tr(" + word2 + ")=" + m2.trace().getDoubleValue() + ", <" + word1 + ", " + word2 + "> = " + ip.getDoubleValue()); //DEBUG
             
             innerProducts.put(key, ip);
             //System.out.println("computing new ip <" + word1 + ", " + word2 + "> = " + ip); //DEBUG

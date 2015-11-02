@@ -216,6 +216,12 @@ public class BaseTensor implements Comparable{
             return innerProductSlow(bt);
         }
     }
+    
+    public int getAmountOfCertainModes(){
+        int amountOfCertainModes = 0;
+        for(int i=0; i<modeDimensionArray.length; i++) if(modeDimensionArray[i] > 0) amountOfCertainModes++;
+        return amountOfCertainModes;
+    }
 	
 	//sort by dimensions
 	@Override

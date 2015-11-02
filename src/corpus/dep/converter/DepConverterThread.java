@@ -2,9 +2,6 @@ package corpus.dep.converter;
 
 import cdt.Helper;
 import corpus.Corpus;
-import experiment.TargetElements;
-import experiment.dep.TargetWord;
-import experiment.dep.Vocabulary;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;

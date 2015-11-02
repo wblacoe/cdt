@@ -2,12 +2,12 @@ package corpus.associationFunction;
 
 import cdt.Helper;
 import corpus.dep.marginalizer.DepMarginalCounts;
-import experiment.dep.TargetWord;
 import io.VocabularyMatrixExporter;
 import io.VocabularyMatrixImporter;
 import java.io.File;
-import linearAlgebra.Matrix;
+import java.util.HashMap;
 import linearAlgebra.count.CountMatrix;
+import linearAlgebra.value.ValueMatrix;
 import numberTypes.NNumber;
 import space.dep.DepNeighbourhoodSpace;
 
@@ -18,7 +18,7 @@ import space.dep.DepNeighbourhoodSpace;
 //joint count matrices are already attached to elements in vocabulary
 public class AssociationFunction {
     
-    public Matrix compute(CountMatrix cm, String targetWord){
+    public synchronized HashMap<String, ValueMatrix> compute(HashMap<String, CountMatrix> jdops){
         return null;
     }
 	
