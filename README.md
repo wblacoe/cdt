@@ -24,21 +24,13 @@ Proceedings of the 8th International Conference on Quantum Interaction (QI 2014)
 <pre><code>
 &lt;text id="ukwac:http://www.caa.co.uk/default.aspx?categoryid=122&pagetype=90&pageid=1166"&gt;</br>
 &lt;s&gt;</br>
-1       For     for     IN      IN      _       15      prep    _       _
-2       further further JJR     JJR     _       3       amod    _       _
-3       information     information     NN      NN      _       1       pobj    _       _
-4       on      on      IN      IN      _       3       prep    _       _
-5       what    what    WP      WP      _       12      dobj    _       _
-6       the     the     DT      DT      _       7       det     _       _
-7       obligations     obligation      NNS     NNS     _       12      nsubj   _       _
-8       of      of      IN      IN      _       7       prep    _       _
-9       the     the     DT      DT      _       10      det     _       _
-10      trustee trustee NN      NN      _       8       pobj    _       _
-11      are     are     VBP     VBP     _       12      aux     _       _
-12      see     see     VB      VB      _       4       pcomp   _       _
-13      Group   group   NNP     NNP     _       14      nn      _       _
-14      Ownership       ownership       NNP     NNP     _       12      dep     _       _
-15      .       .       SENT    SENT    _       0       null    _       _
+1       There   there   EX      EX      _       2       expl    _       _
+2       are     are     VBP     VBP     _       0       null    _       _
+3       charges charge  NNS     NNS     _       2       nsubj   _       _
+4       for     for     IN      IN      _       3       prep    _       _
+5       some    some    DT      DT      _       6       det     _       _
+6       services        service NNS     NNS     _       4       pobj    _       _
+7       .       .       SENT    SENT    _       2       punct   _       _
 &lt;/s&gt;</br>
 ...</br>
 &lt;s&gt;</br>
