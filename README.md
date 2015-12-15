@@ -22,10 +22,6 @@ Proceedings of the 8th International Conference on Quantum Interaction (QI 2014)
 <pre><code>
 &lt;text id="ukwac:http://www.caa.co.uk/default.aspx?categoryid=122&pagetype=90&pageid=1166"&gt;</br>
 &lt;s&gt;</br>
-<table>
-<!--<tr><td>1</td><td>For</td><td>for</td><td>IN</td><td>IN</td><td>_</td><td>15</td><td>prep</td><td>_</td><td>_</td></tr>
-<tr><td>2</td><td>further</td><td>further</td><td>JJR</td><td>JJR</td><td>_</td><td>3</td><td>amod</td><td>_</td><td>_</td></tr>
-</table></br>-->
 1       For     for     IN      IN      _       15      prep    _       _
 2       further further JJR     JJR     _       3       amod    _       _
 3       information     information     NN      NN      _       1       pobj    _       _
