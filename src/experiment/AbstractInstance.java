@@ -6,7 +6,7 @@ package experiment;
  */
 public class AbstractInstance {
 
-    protected int index;
+    public int index;
     
     public void setIndex(int index) {
         this.index = index;

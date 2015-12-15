@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import space.dep.DepNeighbourhoodSpace;
 
 /**
  *
@@ -22,13 +23,16 @@ public class DepContextCounts {
     protected static Pattern contextCountsPattern = Pattern.compile("<contextcounts corpus=\\\"(.*?)\\\">");
     protected static Pattern depRelationPattern = Pattern.compile("<deprelation name=\\\"(.*?)\\\">");
     protected HashMap<String, HashMap<String, Long>> depRelationWordCountMap; //count map for target words (under null subspace), and context words under all subspaces
-    //protected HashMap<String, TreeMap<WordCountPair, WordCountPair>> depRelationWordCountMap; //count map for target words (under null subspace), and context words under all subspaces
     protected HashMap<String, TreeSet<Entry<String, Long>>> sortedDepRelationWordCountMap;
 
     public DepContextCounts(){
         //prepare count map for all dep relations
 		depRelationWordCountMap = new HashMap<>();
         sortedDepRelationWordCountMap = new HashMap<>();
+    }
+    
+    public boolean isEmpty(){
+        return depRelationWordCountMap.isEmpty();
     }
     
     public HashMap<String, HashMap<String, Long>> getDepRelationWordCountMap(){
@@ -96,7 +100,12 @@ public class DepContextCounts {
             sortedWordCountMap = new TreeSet<>(new Comparator<Entry<String, Long>>(){
                 @Override
                 public int compare(Entry<String, Long> t1, Entry<String, Long> t2) {
-                    return Long.compare(t1.getValue(), t2.getValue());
+                    int valueCompare = Long.compare(t1.getValue(), t2.getValue());
+                    if(valueCompare != 0){
+                        return valueCompare;
+                    }else{
+                        return t1.getKey().compareTo(t2.getKey());
+                    }
                 }
             });
             for(Entry<String, Long> t : depRelationWordCountMap.get(depRelation).entrySet()){
@@ -142,11 +151,10 @@ public class DepContextCounts {
     }
 
     public void saveToWriter(BufferedWriter out) throws IOException{
-        out.write("<contextcounts corpus=\"" + Corpus.getName() + "\">\n");
+        out.write("<contextcounts corpus=\"" + DepNeighbourhoodSpace.getName() + "\">\n");
         for(String depRelation : depRelationWordCountMap.keySet()){
             Helper.report("[ContextCounts] Writing counts for dep relation \"" + depRelation + "\" to file");
             out.write("<deprelation name=\"" + depRelation + "\">\n");
-            HashMap<String, Long> wordCountMap = depRelationWordCountMap.get(depRelation);
             TreeSet<Entry<String, Long>> sortedWordCountMap = getSortedMap(depRelation);
             while(!sortedWordCountMap.isEmpty()){
                 Entry<String, Long> topWordCountPair = sortedWordCountMap.pollLast();
@@ -161,6 +169,7 @@ public class DepContextCounts {
             Helper.report("[ContextCounts] Saving counts to \"" + contextCountsFile + "\"...");
             BufferedWriter out = Helper.getFileWriter(contextCountsFile);
             saveToWriter(out);
+            out.close();
             Helper.report("[ContextCounts] ...Finished saving counts to \"" + contextCountsFile + "\"...");
         }catch(IOException e){
             e.printStackTrace();
@@ -239,13 +248,5 @@ public class DepContextCounts {
         
         return s;
     }
-    
-    
-    public static void main(String[] args){
-        File inFile = new File("/local/william/preprocessed/ukwac.depParsed/contextcounts.gz");
-        File outFile = new File("/local/william/preprocessed/ukwac.depParsed/contextcounts.test.gz");
-        DepContextCounts dcc = DepContextCounts.importFromFile(inFile);
-        //dcc.saveToFile(outFile);
-    }
-    
+
 }

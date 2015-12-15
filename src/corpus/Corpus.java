@@ -49,15 +49,17 @@ public class Corpus {
         return minAmountOfNeighboursWhenCounting;
     }
     
-    public static void setTotalWordCount(long n){
+    /*public static void setTotalWordCount(long n){
         totalWordCount = n;
     }
     public static long getTotalWordCount(){
         return totalWordCount;
     }
+    */
     
     public static String getString(){
-        String s = "Corpus \"" + name + "\":\ntotal word count=" + totalWordCount;
+        //String s = "Corpus \"" + name + "\":\ntotal word count=" + totalWordCount;
+        String s = name;
         return s;
     }
     

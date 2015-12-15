@@ -164,21 +164,23 @@ public class LinearCombinationMatrix extends Matrix {
             if(weight != null && !weight.isZero()){
 				TargetWord tw = Vocabulary.getTargetWord(i);
 				ValueMatrix twMatrix = (ValueMatrix) tw.getLexicalRepresentation();
-				for(int j=0; j<twMatrix.getAmountOfNonNullBaseMatrices(); j++){
-					//System.out.println("toValueMatrix i=" + i + ", j=" + j); //DEBUG
-					ValueBaseMatrix bm = twMatrix.getBaseMatrix(j);
-					ValueBaseMatrix existingBm = collection.remove(bm);
-					if(existingBm == null){
-						ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), bm.getValue().multiply(weight));
-						collection.put(newBm, newBm);
-					}else{
-						ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), existingBm.getValue().add(bm.getValue().multiply(weight)));
-						collection.put(newBm, newBm);
+				if(twMatrix != null && !twMatrix.isZero()){
+					for(int j=0; j<twMatrix.getAmountOfNonNullBaseMatrices(); j++){
+						//System.out.println("toValueMatrix i=" + i + ", j=" + j); //DEBUG
+						ValueBaseMatrix bm = twMatrix.getBaseMatrix(j);
+						ValueBaseMatrix existingBm = collection.remove(bm);
+						if(existingBm == null){
+							ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), bm.getValue().multiply(weight));
+							collection.put(newBm, newBm);
+						}else{
+							ValueBaseMatrix newBm = new ValueBaseMatrix(bm.getLeftBaseTensor(), bm.getRightBaseTensor(), existingBm.getValue().add(bm.getValue().multiply(weight)));
+							collection.put(newBm, newBm);
+						}
+					}
+					for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+						partials[m].add(twMatrix.getPartialTraceDiagonalVector(m).times(weight));
 					}
 				}
-                for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
-                    partials[m].add(twMatrix.getPartialTraceDiagonalVector(m).times(weight));
-                }
 			}
         }
         

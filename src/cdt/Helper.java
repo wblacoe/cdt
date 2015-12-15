@@ -92,7 +92,7 @@ public class Helper {
     }
 
     public synchronized static void ensureContainingFolderExists(File file){
-        if(!file.getParentFile().exists()){
+        if(file.getParentFile() != null && !file.getParentFile().exists()){
             file.getParentFile().mkdirs();
         } 
     }

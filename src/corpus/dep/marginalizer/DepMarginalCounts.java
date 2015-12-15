@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import space.dep.DepNeighbourhoodSpace;
@@ -22,58 +23,59 @@ public class DepMarginalCounts {
 
     protected static Pattern marginalCountsPattern = Pattern.compile("<marginalcounts corpus=\\\"(.*?)\\\" totalcount=\\\"(.*?)\\\">");
     protected static Pattern targetElementsPattern = Pattern.compile("<targetelements totalcount=\\\"(.*?)\\\">");
-    protected static Pattern modePattern = Pattern.compile("<mode index=\\\"(.*?)\\\" description=\\\"(.*?)\\\" totalcount=\\\"(.*?)\\\">"); //TODO change "description" to "name"
+    protected static Pattern modePattern = Pattern.compile("<mode index=\\\"(.*?)\\\" description=\\\"(.*?)\\\" totalcount=\\\"(.*?)\\\">");
     
-    //protected Long corpusTotalCount;
-	//protected HashMap<DepRelationCluster, HashMap<String, Long>> modeWordCountMap; //count map for target words (under null subspace), and context words under all subspaces
     protected HashMap<String, HashMap<String, Long>> modeWordCountMap; //count map for target words (under null subspace), and context words under all subspaces
-
+    protected long totalCorpusCount;
     
     public DepMarginalCounts(){
-        //corpusTotalCount = null;
 		//prepare count map for target words (under null subspace), and context words under all subspaces
 		modeWordCountMap = new HashMap<>();
 		modeWordCountMap.put(null, new HashMap<String, Long>());
         for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
-            //DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationCluster(m);
-            //modeWordCountMap.put(drc, new HashMap<String, Long>());
             String drcName = DepNeighbourhoodSpace.getDepRelationCluster(m).getName();
             modeWordCountMap.put(drcName, new HashMap<String, Long>());
         }
-
+        totalCorpusCount = 0L;
     }
 
     
-    public HashMap</*DepRelationCluster*/ String, HashMap<String, Long>> getModeWordCountMap(){
+    public HashMap<String, HashMap<String, Long>> getModeWordCountMap(){
         return modeWordCountMap;
     }
 
-    public void setContextWordCount(/*DepRelationCluster drc*/ String drcName, String word, Long count){
-        //modeWordCountMap.get(drc).put(word, count);
-        modeWordCountMap.get(drcName).put(word, count);
+    public void setContextWordCount(String drcName, String word, Long count){
+        HashMap<String, Long> wordCountMap = modeWordCountMap.get(drcName);
+        if(wordCountMap == null){
+            HashMap<String, Long> newWordCountMap = new HashMap<>();
+            newWordCountMap.put(word, count);
+            modeWordCountMap.put(drcName, wordCountMap);
+        }else{
+            wordCountMap.put(word, count);
+        }
     }
-    public Long getContextWordCount(/*DepRelationCluster drc*/ String drcName, String word){
-        //return modeWordCountMap.get(drc).get(word);
-        return modeWordCountMap.get(drcName).get(word);
+    public Long getContextWordCount(String drcName, String word){
+        HashMap<String, Long> wordCountMap = modeWordCountMap.get(drcName);
+        if(wordCountMap == null){
+            modeWordCountMap.put(drcName, new HashMap<String, Long>());
+            return 0L;
+        }else{
+            return wordCountMap.get(word);
+        }
     }
-    public void addContextWordCount(/*DepRelationCluster drc*/ String drcName, String word, Long n){
-        //Long existingCount = getContextWordCount(drc, word);
+    public void addContextWordCount(String drcName, String word, Long n){
         Long existingCount = getContextWordCount(drcName, word);
         if(existingCount == null){
-            //setContextWordCount(drc, word, 1L);
             setContextWordCount(drcName, word, 1L);
         }else{
-            //setContextWordCount(drc, word, existingCount + n);
             setContextWordCount(drcName, word, existingCount + n);
         }
     }
     
-    public void setTotalContextWordCount(/*DepRelationCluster drc*/ String drcName, Long count){
-        //modeWordCountMap.get(drc).put(null, count);
+    public void setTotalContextWordCount(String drcName, Long count){
         modeWordCountMap.get(drcName).put(null, count);
     }
-    public Long getTotalContextWordCount(/*DepRelationCluster drc*/ String drcName){
-        //return getContextWordCount(drc, null);
+    public Long getTotalContextWordCount(String drcName){
         return getContextWordCount(drcName, null);
     }
     
@@ -101,24 +103,33 @@ public class DepMarginalCounts {
     
     public void setCorpusTotalCount(long count){
         //corpusTotalCount = count;
-        Corpus.setTotalWordCount(count);
+        //Corpus.setTotalWordCount(count);
+        totalCorpusCount = count;
     }
     public long getCorpusTotalCount(){
         //return corpusTotalCount;
-        return Corpus.getTotalWordCount();
+        //return Corpus.getTotalWordCount();
+        return totalCorpusCount;
+    }
+    
+    public void setTotalTargetAndContextWordCounts(){
+        for(String key : modeWordCountMap.keySet()){
+            Long totalCount = 0L;
+            HashMap<String, Long> wordCountMap = modeWordCountMap.get(key);
+            for(Entry<String, Long> wordCount : wordCountMap.entrySet()){
+                totalCount += wordCount.getValue();
+            }
+            wordCountMap.put(null, totalCount);
+        }
     }
     
     
     public void add(DepMarginalCounts givenDmc){
-        //HashMap<DepRelationCluster, HashMap<String, Long>> givenModeWordCountMap = givenDmc.getModeWordCountMap();
         HashMap<String, HashMap<String, Long>> givenModeWordCountMap = givenDmc.getModeWordCountMap();
-        //for(DepRelationCluster drc : givenModeWordCountMap.keySet()){
         for(String drcName : givenModeWordCountMap.keySet()){
-            //HashMap<String, Long> givenWordCountMap = givenModeWordCountMap.get(drc);
             HashMap<String, Long> givenWordCountMap = givenModeWordCountMap.get(drcName);
             for(String word : givenWordCountMap.keySet()){
                 Long givenCount = givenWordCountMap.get(word);
-                //addContextWordCount(drc, word, givenCount);
                 addContextWordCount(drcName, word, givenCount);
             }
         }
@@ -130,7 +141,8 @@ public class DepMarginalCounts {
         //write meta information
         out.write("<marginalcounts " +
             "corpus=\"" + DepNeighbourhoodSpace.getName() + "\" " +
-            "totalcount=\"" + Corpus.getTotalWordCount() + "\">\n");
+            //"totalcount=\"" + Corpus.getTotalWordCount() + "\">\n");
+            "totalcount=\"" + totalCorpusCount + "\">\n");
 
         //go through all target words
         HashMap<String, Long> wordCountMap = modeWordCountMap.get(null);
@@ -147,7 +159,7 @@ public class DepMarginalCounts {
         for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
             DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationCluster(m);
 
-            wordCountMap = modeWordCountMap.get(drc);
+            wordCountMap = modeWordCountMap.get(drc.getName());
             totalSubSpaceCount = wordCountMap.get(null);
             out.write("<mode name=\"" + drc.getName() + "\" totalcount=\"" + totalSubSpaceCount + "\">\n");
 
@@ -164,9 +176,60 @@ public class DepMarginalCounts {
 
         out.write("</marginalcounts>");
 	}
-    public void saveToFile(File marginalCountsFile) throws IOException{
+    
+    public void saveToWriterDEBUG(BufferedWriter out) throws IOException{
+		int minCount = Helper.getMinMarginalCount(); //only save context counts over or equal to this threshold
+		
+        //write meta information
+        out.write("<marginalcounts " +
+            "corpus=\"" + DepNeighbourhoodSpace.getName() + "\" " +
+            //"totalcount=\"" + Corpus.getTotalWordCount() + "\">\n");
+            "totalcount=\"" + totalCorpusCount + "\">\n");
+
+        //go through all target words
+        HashMap<String, Long> wordCountMap = modeWordCountMap.get(null);
+        long totalSubSpaceCount = wordCountMap.get(null);
+        out.write("<targetelements totalcount=\"" + totalSubSpaceCount + "\">\n");
+        for(Map.Entry<String, Long> entry : wordCountMap.entrySet()){
+            String word = entry.getKey();
+            if(word == null) continue; //skip the null entry (i.e. total count for this subspace), this goes into the meta information
+            Long count = entry.getValue();
+            if(count >= minCount) out.write(word + "\t" + count + "\n");
+        }
+        
+        //go through all modes
+        //for(int m=1; m<=DepNeighbourhoodSpace.getOrder(); m++){
+        for(String key : modeWordCountMap.keySet()){
+            //DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationCluster(m);
+
+            wordCountMap = modeWordCountMap.get(key);
+            totalSubSpaceCount = wordCountMap.get(null);
+            out.write("<mode name=\"" + key + "\" totalcount=\"" + totalSubSpaceCount + "\">\n");
+
+            //go through all words under this subspace
+            for(Map.Entry<String, Long> entry : wordCountMap.entrySet()){
+                String word = entry.getKey();
+                if(word == null) continue; //skip the null entry (i.e. total count for this subspace), this goes into the meta information
+                Long count = entry.getValue();
+                if(count >= minCount) out.write(word + "\t" + count + "\n");
+            }
+
+            out.write("</mode>\n");
+        }
+
+        out.write("</marginalcounts>");
+	}
+    
+    public void saveToFile(File marginalCountsFile){
         Helper.report("[DepMarginalizer] Saving counts to file \"" + marginalCountsFile + "\"...");
-        BufferedWriter out = Helper.getFileWriter(marginalCountsFile);
+        try{
+            BufferedWriter out = Helper.getFileWriter(marginalCountsFile);
+            saveToWriter(out);
+            out.close();
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+        
         Helper.report("[DepMarginalizer] ...Finished saving counts to file \"" + marginalCountsFile + "\"");
     }
 	
@@ -179,10 +242,12 @@ public class DepMarginalCounts {
                 break;
             }else{
                 String[] entries = line.split("\t");
-                String word = entries[0];
-                long count = Long.parseLong(entries[1]);
-                if(Vocabulary.contains(word) && count >= minCount){
-                    dmc.setTargetWordCount(word, count);
+                if(entries.length == 2){
+                    String word = entries[0];
+                    long count = Long.parseLong(entries[1]);
+                    if(Vocabulary.contains(word) && count >= minCount){
+                        dmc.setTargetWordCount(word, count);
+                    }
                 }
             }
         }
@@ -211,22 +276,11 @@ public class DepMarginalCounts {
 		
         DepMarginalCounts dmc = new DepMarginalCounts();
         
-        //File marginalCountsFile = new File(space.getStringParameter("marginalcountsfile"));
-        /*BufferedReader in =
-            marginalCountsFile.getName().endsWith(".gz") ?
-            new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(marginalCountsFile)))) :
-            new BufferedReader(new FileReader(marginalCountsFile));
-        */
-			
         String line;
-        //int counter = 0;
-        //DepRelationCluster drc = null;
         while((line = in.readLine()) != null){
-            //counter++;
 
             //skip empty lines
             if(line.isEmpty()) continue;
-
 
             //start the counts file
             if(line.startsWith("<marginalcounts")){
@@ -274,7 +328,8 @@ public class DepMarginalCounts {
 
     @Override
     public String toString(){
-        String s = "CORPUS\ntotal count=" + Corpus.getTotalWordCount() + "\n";
+        //String s = "CORPUS\ntotal count=" + Corpus.getTotalWordCount() + "\n";
+        String s = "CORPUS\ntotal count=" + totalCorpusCount + "\n";
         s += "TARGET WORDS\ntotal count=" + getTotalTargetWordCount() + "\n";
         
         int i=0;

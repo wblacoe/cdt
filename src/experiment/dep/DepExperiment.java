@@ -32,7 +32,7 @@ public class DepExperiment extends Experiment {
     }
 
     
-    public void composeTrees(InnerProductsCache ipc, File sdopsFolder, File innerProductsFile, int amountOfTreesPerThread, int saveSdopsEvery){
+    public void composeTrees(InnerProductsCache ipc, File sdopsFolder, File sdopsValueFolder, File innerProductsFile, int amountOfTreesPerThread, int saveSdopsEvery){
         HashMap<String, DepTree> indexDepTreesMap = new HashMap<>();
         
         for(Integer instanceIndex : dataset.getIndicesSet()){
@@ -61,9 +61,12 @@ public class DepExperiment extends Experiment {
 			}
         }
         
-        Composor cmp = new Composor(ipc, sdopsFolder, innerProductsFile, dataset);
+        Composor cmp = new Composor(ipc, sdopsFolder, sdopsValueFolder, innerProductsFile, dataset);
 		indexSdopsMap.putAll(cmp.composeTrees(indexDepTreesMap, amountOfTreesPerThread, saveSdopsEvery));
     }
+	public void composeTrees(InnerProductsCache ipc, File sdopsFolder, File innerProductsFile, int amountOfTreesPerThread, int saveSdopsEvery){
+		composeTrees(ipc, sdopsFolder, null, innerProductsFile, amountOfTreesPerThread, saveSdopsEvery);
+	}
     
     public void saveSdopsToFiles(File sdopsFolder){
         CustomMatrixExporter me = new CustomMatrixExporter();

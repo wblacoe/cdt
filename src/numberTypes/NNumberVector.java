@@ -148,12 +148,14 @@ public class NNumberVector {
     }
     
     public void keepOnlyWeightsLargerOrEqualTo(NNumber threshold){
-        for(int i=0; i<getLength(); i++){
-            NNumber weight = getWeight(i);
-            if(weight != null && weight.compareTo(threshold) < 0){
-                setWeight(i, null);
-            }
-        }
+		if(threshold != null){
+			for(int i=0; i<getLength(); i++){
+				NNumber weight = getWeight(i);
+				if(weight != null && weight.compareTo(threshold) < 0){
+					setWeight(i, null);
+				}
+			}
+		}
     }
     
     public void keepOnlyTopNWeights(int n){
@@ -165,7 +167,7 @@ public class NNumberVector {
                 while(topNWeights.size() > n) topNWeights.pollFirst();
             }
         }
-        keepOnlyWeightsLargerOrEqualTo(topNWeights.first());
+		if(!topNWeights.isEmpty()) keepOnlyWeightsLargerOrEqualTo(topNWeights.first());
     }
     
     @Override

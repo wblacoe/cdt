@@ -38,7 +38,7 @@ public class Mode {
     }
     
     //warning: this deletes previously existing dimensionObjectsArray
-    public void setDimensionality(int dimensionality){
+    private void setDimensionality(int dimensionality){
         //#dimensionObjectsArray = new Dimension[dimensionality];
         dimensionObjectsArray = new Dimension[dimensionality + 1];
     }

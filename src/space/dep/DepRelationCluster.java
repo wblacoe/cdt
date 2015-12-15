@@ -153,8 +153,11 @@ public class DepRelationCluster extends Mode {
         out.write("<dimensions>\n");
         for(int d=1; d<=getDimensionality(); d++){
             ContextWord cw = getContextWord(d);
-            if(cw == null) System.out.println("DRC " + name + ", dimension " + d + ", context word cannot be saved to file because NULL!"); //DEBUG
-            cw.saveToWriter(out);
+            if(cw == null){
+                System.out.println("DRC " + name + ", dimension " + d + ", context word cannot be saved to file because NULL!"); //DEBUG
+            }else{
+                cw.saveToWriter(out);
+            }
         }
         out.write("</dimensions>\n");
         out.write("</mode>\n");

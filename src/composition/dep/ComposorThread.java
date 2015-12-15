@@ -12,7 +12,6 @@ import java.util.HashMap;
 import linearAlgebra.value.LinearCombinationMatrix;
 import numberTypes.NNumber;
 import numberTypes.NNumberVector;
-import space.dep.DepNeighbourhoodSpace;
 import space.dep.DepRelationCluster;
 
 /**
@@ -71,7 +70,7 @@ public class ComposorThread implements Runnable {
         return similarity;
     }
 
-    private void analyse(String index, String phrase, NNumberVector[] vectors, LinearCombinationMatrix[] matrices, InnerProductsCache ipc){
+    private void analysePkc2006(String index, String phrase, NNumberVector[] vectors, LinearCombinationMatrix[] matrices, InnerProductsCache ipc){
         int card = 0;
         double[] sums = new double[3];
         for(int i=0; i<Vocabulary.getSize(); i++){
@@ -136,7 +135,7 @@ public class ComposorThread implements Runnable {
 
         //multiply the weights for alternative heads by their similarities with given head
         NNumberVector weightedSimilaritiesVector = new NNumberVector(Vocabulary.getSize());
-        NNumberVector similaritiesVector = new NNumberVector(Vocabulary.getSize());
+        //NNumberVector similaritiesVector = new NNumberVector(Vocabulary.getSize());
         
         //start the dop to be returned by adding 1 at the head's target word index
         TargetWord head = Vocabulary.getTargetWord(headNode.getWord());
@@ -154,7 +153,7 @@ public class ComposorThread implements Runnable {
                     if(similarity != null && !similarity.isZero()){
                         //s += "sim(" + headNode.getWord() + ", " + Vocabulary.getTargetWord(i).getWord() + ") = " + similarity + " "; //DEBUG
                         weightedSimilaritiesVector.add(i, weight.multiply(similarity));
-                        similaritiesVector.add(i, similarity);
+                        //similaritiesVector.add(i, similarity);
                     }
                 }
             }
@@ -165,10 +164,10 @@ public class ComposorThread implements Runnable {
         LinearCombinationMatrix dop = new LinearCombinationMatrix(weightedSimilaritiesVector);
         dop.setName(headNode.getWord() + "-" + dependentRepresentation.getName());
         
-        //analysis
-		LinearCombinationMatrix normalisedDop = dop.getCopy();
+        //analysis (only for PKC 2006)
+		/*LinearCombinationMatrix normalisedDop = dop.getCopy();
 		normalisedDop.normalize(true);
-        analyse(
+        analysePkc2006(
 			index,
 			headNode.getWord() + "-" + dependentRepresentation.getName(),
 				new NNumberVector[]{
@@ -183,6 +182,7 @@ public class ComposorThread implements Runnable {
 				},
 				ipc
 		);
+		*/
         
         return dop;
     }
@@ -240,6 +240,8 @@ public class ComposorThread implements Runnable {
     public void composeTrees(){
 		LinearCombinationMatrix m;
         for(String index : indexDepTreeMap.keySet()){
+			Helper.report("[Composor] (" + name + ") Composing sentence " + index + "...");
+			
 			//save root node representation
             //LinearCombinationMatrix treeRepresentation = getRepresentation(index, integerDepTreeMap.get(index));
             //treeRepresentation.setName(index);
@@ -252,7 +254,7 @@ public class ComposorThread implements Runnable {
 			m.setName(index);
 			treeRepresentations.put(index, m);
 			
-			/* save representations of subroot nodes for later
+			//save representations of subroot nodes for later
 			int i=0;
 			for(DepNode dependent : depTree.getRootNode().getDependents()){
 				m = dependent.getRepresentation();
@@ -262,9 +264,8 @@ public class ComposorThread implements Runnable {
 					i++;
 				}
 			}
-			*/
 			
-			Helper.report("[ComposorThread] (" + name + ") ...Finished composing sentence #" + index);
+			Helper.report("[Composor] (" + name + ") ...Finished composing sentence " + index);
         }
     }
 

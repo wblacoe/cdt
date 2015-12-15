@@ -335,11 +335,11 @@ public class FeatureVectorExtractorThread implements Runnable {
 				for(int i=0; i<length; i++){
 					NNumber weight = subRootsFeatureVectors.getWeight(i);
 					//min
-					if(subRootsMinFeatureVector.getWeight(i) == null || weight.compareTo(subRootsMinFeatureVector.getWeight(i)) < 0){
+					if(subRootsMinFeatureVector.getWeight(i) == null || (weight != null && weight.compareTo(subRootsMinFeatureVector.getWeight(i)) < 0)){
 						subRootsMinFeatureVector.setWeight(i, weight);
 					}
 					//max
-					if(subRootsMaxFeatureVector.getWeight(i) == null || weight.compareTo(subRootsMaxFeatureVector.getWeight(i)) > 0){
+					if(subRootsMaxFeatureVector.getWeight(i) == null || (weight != null && weight.compareTo(subRootsMaxFeatureVector.getWeight(i)) > 0)){
 						subRootsMaxFeatureVector.setWeight(i, weight);
 					}
 				}

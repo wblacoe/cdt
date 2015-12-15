@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
+import space.dep.DepNeighbourhoodSpace;
+import space.dep.DepRelationCluster;
 
 public class DepMarginalizerThread implements Runnable{
 
@@ -18,7 +20,6 @@ public class DepMarginalizerThread implements Runnable{
 	protected File corpusFile;
 	protected int amountOfSentences;
 	
-	//protected HashMap<DepRelationCluster, HashMap<String, Long>> subSpaceWordCountMap;
     protected DepMarginalCounts localDmc;
 	
 	public DepMarginalizerThread(DepMarginalizer marginalizer, String name, File corpusFile, int amountOfSentences){
@@ -28,44 +29,14 @@ public class DepMarginalizerThread implements Runnable{
 		this.amountOfSentences = amountOfSentences;
 		
         localDmc = new DepMarginalCounts();
-        
-		//prepare subspace count map for target words (under null subspace), and context words under all subspaces
-		/*subSpaceWordCountMap = new HashMap<>();
-		subSpaceWordCountMap.put(null, new HashMap<String, Long>());
-        for(int m=0; m<DepNeighbourhoodSpace.getOrder(); m++){
-            DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationCluster(m);
-            subSpaceWordCountMap.put(drc, new HashMap<String, Long>());
-        }
-        */
 	}
 	
-	
-	
-	/*private void increaseCount(DepRelationCluster drc, String word){
-		HashMap<String, Long> wordCountMap = subSpaceWordCountMap.get(drc);
-		Long existingCount = wordCountMap.get(word);
-		if(existingCount == null){
-			wordCountMap.put(word, 1L);
-		}else{
-			wordCountMap.put(word, existingCount + 1L);
-		}
-	}
-	protected void increaseCountTargetWord(String targetWord){
-		increaseCount(null, targetWord);
-	}
-	protected void increaseCountHeadToDependent(String depRelationString, String dependentWord){
-		increaseCount(DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationString(depRelationString), dependentWord);
-	}
-	protected void increaseCountDependentToHead(String depRelationString, String headWord){
-        increaseCount(DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationString(depRelationString + "-1"), headWord);
-	}
-    */
 	
 	//collects counts of target words and context words
 	protected void marginalize(){
 		Helper.report("[DepMarginalizer] Marginalising corpus file \"" + name + "\"...");
 		
-
+        long lineCount = 0;
 		int sentenceCounter = 0; //count sentences
 		
 		//save current sentence in here
@@ -87,9 +58,10 @@ public class DepMarginalizerThread implements Runnable{
 				if(line.equals("</s>")){
 					//go through all dependency arcs (from dependent to head. the reverse arcs have already been processed on the fly)
 					for(Entry<String, String> entry : relationHeadNumberInSentenceMap.entrySet()){
-						//increaseCountDependentToHead(entry.getKey(), wordNumberInSentenceWordMap.get(entry.getValue()));
-                        //localDmc.addContextWordCount(DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationString(entry.getKey()), wordNumberInSentenceWordMap.get(entry.getValue()), 1L);
-                        localDmc.addContextWordCount(entry.getKey(), wordNumberInSentenceWordMap.get(entry.getValue()), 1L);
+                        DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationString(entry.getKey() + "-1");
+                        if(drc != null){
+                            localDmc.addContextWordCount(drc.getName(), wordNumberInSentenceWordMap.get(entry.getValue()), 1L);
+                        }
 					}
 					//clear data structures for this sentence
 					wordNumberInSentenceWordMap.clear();
@@ -105,6 +77,7 @@ public class DepMarginalizerThread implements Runnable{
 				//only consider well-formed lines with content
 				if(entries.length != 10) continue;
 				
+                lineCount++;
 				String targetWordNumberInSentence = entries[0];
 				String targetWord = entries[2];
 				String headNumberInSentence = entries[6];
@@ -122,7 +95,13 @@ public class DepMarginalizerThread implements Runnable{
 				//increase count from head to dependent (right now. increase reverse count later)
 				//increaseCountHeadToDependent(relationWithHead, targetWord);
                 //localDmc.addContextWordCount(DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationString(relationWithHead), targetWord, 1L);
-                localDmc.addContextWordCount(relationWithHead, targetWord, 1L);
+                //localDmc.addContextWordCount(relationWithHead, targetWord, 1L);
+                DepRelationCluster drc = DepNeighbourhoodSpace.getDepRelationClusterFromDepRelationString(relationWithHead);
+                if(drc != null){
+                    localDmc.addContextWordCount(drc.getName(), targetWord, 1L);
+                }//else{
+                    //System.out.println("there is no drc for relation \"" + relationWithHead + "\"!"); //DEBUG
+                //}
 			}
 			
 			in.close();
@@ -131,7 +110,7 @@ public class DepMarginalizerThread implements Runnable{
 		}
 		
 		//marginalizer.reportDepMarginalizerThreadDone(this, subSpaceWordCountMap);
-        marginalizer.reportDepMarginalizerThreadDone(this, localDmc);
+        marginalizer.reportDepMarginalizerThreadDone(this, localDmc, lineCount);
 		Helper.report("[DepMarginalizer] (" + name + ") ...Finished marginalising " + sentenceCounter + " sentences from corpus file \"" + name + "\".");
 	}
 	

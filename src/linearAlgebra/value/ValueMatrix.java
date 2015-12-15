@@ -230,17 +230,21 @@ public class ValueMatrix extends Matrix {
     public NNumber innerProductSlow(ValueMatrix m){
         NNumber ip = null;
         
-        for(int i1=0; i1<getCardinality(); i1++){
+        for(int i1=0; i1<getAmountOfNonNullBaseMatrices(); i1++){
             ValueBaseMatrix bm1 = getBaseMatrix(i1);
-            for(int i2=0; i2<m.getCardinality(); i2++){
-                ValueBaseMatrix bm2 = m.getBaseMatrix(i2);
-                NNumber x = bm1.innerProduct(bm2);
-                if(ip == null){
-                    ip = x;
-                }else if(x != null){
-                    ip = ip.add(x);
-                }
-            }
+			if(bm1 != null){
+				for(int i2=0; i2<m.getAmountOfNonNullBaseMatrices(); i2++){
+					ValueBaseMatrix bm2 = m.getBaseMatrix(i2);
+					if(bm2 != null){
+						NNumber x = bm1.innerProduct(bm2);
+						if(ip == null){
+							ip = x;
+						}else if(x != null){
+							ip = ip.add(x);
+						}
+					}
+				}
+			}
         }
         
         if(ip == null){

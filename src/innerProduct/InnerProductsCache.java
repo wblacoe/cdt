@@ -1,6 +1,7 @@
 package innerProduct;
 
 import cdt.Helper;
+import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -42,81 +43,28 @@ public class InnerProductsCache {
         return hyperparameters.get(key);
     }
     
-    /*public Set<SimpleEntry<Integer, Integer>> getKeys(){
-        return innerProducts.keySet();
-    }
-    */
-    
     public Set<String> getKeys(){
         return innerProducts.keySet();
     }
-    
-    /*public void setInnerProduct(int twIndex1, int twIndex2, NNumber ip){
-        int i1, i2;
-        if(twIndex1 <= twIndex2){
-            i1 = twIndex1;
-            i2 = twIndex2;
-        }else{
-            i1 = twIndex2;
-            i2 = twIndex1;
-        }
 
-        SimpleEntry<Integer, Integer> indexPair = new SimpleEntry<>(i1, i2);
-        innerProducts.put(indexPair, ip);
-    }
-    */
-    
     public void setInnerProduct(String word1, String word2, NNumber ip){
-        //setInnerProduct(wordTargetWordIndexMap.get(word1), wordTargetWordIndexMap.get(word2), ip);
-        
-        String key = (word1.compareTo(word2) < 0 ? word1 + "_#_" + word2 : word2 + "_#_" + word1);
+        String key = (word1.compareTo(word2) < 0 ? word1 + "\t" + word2 : word2 + "\t" + word1);
         innerProducts.put(key, ip);
     }
     
-    /*public NNumber getInnerProduct(int twIndex1, int twIndex2, boolean computeIfNull){
-        int i1, i2;
-        if(twIndex1 <= twIndex2){
-            i1 = twIndex1;
-            i2 = twIndex2;
-        }else{
-            i1 = twIndex2;
-            i2 = twIndex1;
-        }
-        
-        SimpleEntry<Integer, Integer> indexPair = new SimpleEntry<>(i1, i2);
-        NNumber existingIp = innerProducts.get(indexPair);
-        if(existingIp != null){
-            System.out.println("using existing ip <" + Vocabulary.getTargetWord(i1).getWord() + ", " + Vocabulary.getTargetWord(i2).getWord() + "> = " + existingIp);
-            return existingIp;
-        }else{
-            if(!computeIfNull) return null;
-            TargetWord tw1 = Vocabulary.getTargetWord(i1);
-            if(tw1 == null) return null;
-            TargetWord tw2 = Vocabulary.getTargetWord(i2);
-            if(tw2 == null) return null;
-            ValueMatrix m1 = (ValueMatrix) tw1.getLexicalRepresentation();
-            if(m1 == null) return null;
-            ValueMatrix m2 = (ValueMatrix) tw2.getLexicalRepresentation();
-            if(m2 == null) return null;
-            NNumber ip = m1.innerProduct(m2);
-            if(ip == null) return null;
-            setInnerProduct(i1, i2, ip);
-            
-            System.out.println("computing new ip <" + Vocabulary.getTargetWord(i1).getWord() + ", " + Vocabulary.getTargetWord(i2).getWord() + "> = " + ip);
-            return ip;
-        }
-    }
-    */
-    
     public synchronized NNumber getInnerProduct(String word1, String word2, boolean computeIfNull){
-        String key = (word1.compareTo(word2) < 0 ? word1 + "_#_" + word2 : word2 + "_#_" + word1);
+        String key = (word1.compareTo(word2) < 0 ? word1 + "\t" + word2 : word2 + "\t" + word1);
         NNumber ip = innerProducts.get(key);
         
         
         if(ip == null && computeIfNull){
-            ValueMatrix m1 = (ValueMatrix) Vocabulary.getTargetWord(word1).getLexicalRepresentation();
+            TargetWord tw1 = Vocabulary.getTargetWord(word1);
+            if(tw1 == null) return null;
+            ValueMatrix m1 = (ValueMatrix) tw1.getLexicalRepresentation();
             if(m1 == null) return null;
-            ValueMatrix m2 = (ValueMatrix) Vocabulary.getTargetWord(word2).getLexicalRepresentation();
+            TargetWord tw2 = Vocabulary.getTargetWord(word2);
+            if(tw2 == null) return null;
+            ValueMatrix m2 = (ValueMatrix) tw2.getLexicalRepresentation();
             if(m2 == null) return null;
             ip = m1.innerProduct(m2);
 			//System.out.println("tr(" + word1 + ")=" + m1.trace().getDoubleValue() + ", tr(" + word2 + ")=" + m2.trace().getDoubleValue() + ", <" + word1 + ", " + word2 + "> = " + ip.getDoubleValue()); //DEBUG
@@ -128,10 +76,6 @@ public class InnerProductsCache {
             //System.out.println("using existing ip <" + word1 + ", " + word2 + "> = " + ip); //DEBUG
             return ip;
         }
-        
-        //int twIndex1 = wordTargetWordIndexMap.get(word1);
-        //int twIndex2 = wordTargetWordIndexMap.get(word2);
-        //return getInnerProduct(twIndex1, twIndex2, computeIfNull);
     }
     
     private void importHyperParameters(BufferedReader in) throws IOException{
@@ -153,9 +97,9 @@ public class InnerProductsCache {
             if(line.equals("</innerproducts>")) break;
             
             String[] entries = line.split("\t");
-            if(entries.length == 2){
-				String key = entries[0];
-				float ip = Float.parseFloat(entries[1]);
+            if(entries.length == 3){
+				String key = entries[0] + "\t" + entries[1];
+				float ip = Float.parseFloat(entries[2]);
 				innerProducts.put(key, NNumber.create(ip));
 				counter++;
 			}
@@ -205,14 +149,9 @@ public class InnerProductsCache {
                     out.write("</hyperparameters>\n");
                     
                     out.write("<innerproducts>\n");
-                    //for(SimpleEntry<Integer, Integer> ipPair : getKeys()){
                     for(String key : getKeys()){
-                        //int twIndex1 = ipPair.getKey();
-                        //int twIndex2 = ipPair.getValue();
-                        //NNumber ip = getInnerProduct(twIndex1, twIndex2, false);
                         NNumber ip = innerProducts.get(key);
                         if(ip != null){
-                            //out.write(twIndex1 + "\t" + twIndex2 + "\t" + ip.getDoubleValue() + "\n");
                             out.write(key + "\t" + ip.getDoubleValue() + "\n");
                             counter++;
                         }
@@ -227,14 +166,9 @@ public class InnerProductsCache {
     }
     
     public void integrate(InnerProductsCache ipc){
-        //for(SimpleEntry<Integer, Integer> ipPair : ipc.getKeys()){
         for(String key : ipc.getKeys()){
-            //int twIndex1 = ipPair.getKey();
-            //int twIndex2 = ipPair.getValue();
-            //NNumber ip = ipc.getInnerProduct(twIndex1, twIndex2, false);
             NNumber ip = ipc.innerProducts.get(key);
             if(ip != null){
-                //setInnerProduct(twIndex1, twIndex2, ip);
                 innerProducts.put(key, ip);
             }
         }
@@ -247,13 +181,8 @@ public class InnerProductsCache {
             ipc.setHyperParameter(key, getHyperParameter(key));
         }
      
-        //for(SimpleEntry<Integer, Integer> ipPair : getKeys()){
         for(String key : getKeys()){
-            //int twIndex1 = ipPair.getKey();
-            //int twIndex2 = ipPair.getValue();
-            //NNumber ip = ipc.getInnerProduct(twIndex1, twIndex2, false);
             NNumber ip = innerProducts.get(key);
-            //ipc.setInnerProduct(twIndex1, twIndex2, ip);
             ipc.innerProducts.put(key, ip);
         }
         

@@ -22,14 +22,15 @@ public class Composor {
     private HashSet<Runnable> threads;
     private HashMap<String, LinearCombinationMatrix> treeRepresentations;
     private InnerProductsCache ipc;
-	private File sdopsFolder, innerProductsFile;
+	private File sdopsFolder, sdopsValueFolder, innerProductsFile;
 	private Dataset dataset;
     
-    public Composor(InnerProductsCache ipc, File sdopsFolder, File innerProductsFile, Dataset dataset){
+    public Composor(InnerProductsCache ipc, File sdopsFolder, File sdopsValueFolder, File innerProductsFile, Dataset dataset){
         threads = new HashSet<>();
         treeRepresentations = new HashMap<>();
         this.ipc = ipc;
 		this.sdopsFolder = sdopsFolder;
+		this.sdopsValueFolder = sdopsValueFolder;
 		this.innerProductsFile = innerProductsFile;
 		this.dataset = dataset;
     }
@@ -74,7 +75,7 @@ public class Composor {
 		
 		try{
 			BufferedWriter out = Helper.getFileWriter(sdopsFile);
-            BufferedWriter out2 = Helper.getFileWriter(sdopsValueFile);
+			BufferedWriter out2 = Helper.getFileWriter(sdopsValueFile);
 			
 			for(String key : treeRepresentations.keySet()){
 				Matrix m = treeRepresentations.get(key);
@@ -83,6 +84,7 @@ public class Composor {
 			}
 			
 			out.close();
+			out2.close();
 		}catch(IOException e){
 			e.printStackTrace();
 		}
@@ -103,7 +105,7 @@ public class Composor {
 		Arrays.sort(keys);
 		*/
         
-        for(String key : depTrees.keySet()) System.out.println("composing sentence " + key + "..."); //DEBUG
+        //for(String key : depTrees.keySet()) System.out.println("composing sentence " + key + "..."); //DEBUG
 		
 		Iterator<String> it = depTrees.keySet().iterator();
 
@@ -131,7 +133,7 @@ public class Composor {
 				if(treeRepresentations.size() >= saveSdopsEvery){
 					//flush out all tree representations computed so far (clear up memory)
 					//saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz")); //restore me
-                    saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz"), new File(new File(sdopsFolder, "value"), "sdops." + sdopsFileCounter + ".gz"));
+                    saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz"), new File(sdopsValueFolder, "sdops." + sdopsFileCounter + ".gz"));
 					//sdopsCounter += treeRepresentations.size();
 					treeRepresentations.clear();
 					sdopsFileCounter++;
@@ -141,7 +143,8 @@ public class Composor {
 				}
 			}while(!threads.isEmpty() || it.hasNext());
 		}catch(InterruptedException e){}
-				
+
+		if(!treeRepresentations.isEmpty()) saveAllTreeRepresentationsToFile(new File(sdopsFolder, "sdops." + sdopsFileCounter + ".gz"), new File(sdopsValueFolder, "sdops." + sdopsFileCounter + ".gz"));
 		
 		Helper.report("[Composor] ...Finished composing " + /*sdopsCounter + "/" + depTrees.size() +*/ " sentences");
         return treeRepresentations;

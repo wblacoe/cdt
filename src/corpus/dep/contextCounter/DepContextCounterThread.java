@@ -52,7 +52,7 @@ public class DepContextCounterThread implements Runnable{
 					wordNumberInSentenceWordMap.clear();
 					relationHeadNumberInSentenceMap.clear();
 
-					counter++; //DEBUG
+					counter++;
 					if(amountOfSentences > 0 && counter > amountOfSentences) break;
 					if(counter % 100000 == 0) System.out.println("[ContextCounterThread] (" + name + ") " + counter + " sentences have been processed.");
 				}

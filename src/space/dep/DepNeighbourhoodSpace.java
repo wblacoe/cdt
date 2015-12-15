@@ -2,6 +2,7 @@ package space.dep;
 
 import cdt.Helper;
 import corpus.Corpus;
+import corpus.dep.contextCounter.DepContextCounter;
 import corpus.dep.contextCounter.DepContextCounts;
 import experiment.dep.TargetWord;
 import experiment.dep.Vocabulary;
@@ -9,7 +10,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,18 +26,14 @@ import space.TensorSpace;
  */
 public class DepNeighbourhoodSpace extends TensorSpace {
     
-    //protected static final Pattern depNeighbourhoodSpacePattern = Pattern.compile("<space name=\\\"(.*?)\\\" order=\\\"(.*?)\\\" dimensionality=\\\"(.*?)\\\" corpusformat=\\\"(.*?)\\\" corpusfolder=\\\"(.*?)\\\" contextcountsfile=\\\"(.*?)\\\" datasetwordsfile=\\\"(.*?)\\\">");
     protected static final Pattern hyperParameterPattern = Pattern.compile("(.*?)=\\\"(.*?)\\\"");
     
 	private static String stoplistFilename = null;
     private static final HashSet<String> stoplist = new HashSet<>();
     private static final HashMap<String, DepRelationCluster> depRelationStringDepRelationClusterMap = new HashMap<>();
     private static final HashMap<String, DepRelationCluster> depRelationClusterNameDepRelationClusterMap = new HashMap<>();
-    private static String contextCountsFilename, datasetWordsFilename;
+    public static String contextCountsFilename, datasetWordsFilename, marginalCountsFilename;
     
-    /*public static void saveDepRelationClusterUnderDepRelationString(String depRelationString, DepRelationCluster drc){
-        depRelationStringDepRelationClusterMap.put(depRelationString, drc);
-    }*/
     public static DepRelationCluster getDepRelationClusterFromDepRelationString(String depRelationString){
         return depRelationStringDepRelationClusterMap.get(depRelationString);
     }
@@ -61,22 +57,30 @@ public class DepNeighbourhoodSpace extends TensorSpace {
         HashMap<String, Iterator<Entry<String, Long>>> iterators = new HashMap<>();
         for(String drString : drc.getDepRelationStrings()){
             TreeSet<Entry<String, Long>> wordCountMap = dcc.getSortedMap(drString);
-            if(wordCountMap != null) iterators.put(drString, wordCountMap.descendingIterator());
+            if(wordCountMap != null && !wordCountMap.isEmpty()){
+                iterators.put(drString, wordCountMap.descendingIterator());
+                //System.out.println("Got sorted map for dr string \"" + drString + "\" with size " + wordCountMap.size()); //DEBUG
+            }
         }
         
         int d=1;
+        //int finishedIterators = 0;
+        //while(finishedIterators < iterators.size()){
         while(true){
+            //finishedIterators = 0;
             for(String drString : iterators.keySet()){
                 Iterator<Entry<String, Long>> iterator = iterators.get(drString);
-                //Entry<String, Long> entry = null;
+                //System.out.println("iterator for dr string \"" + drString + "\", has next = " + iterator.hasNext()); //DEBUG
                 if(iterator.hasNext()){
                     String contextWord = iterator.next().getKey();
-                    //System.out.println("drc=" + drString + ", context word=" + contextWord + ", drc has context word=" + drc.hasContextWord(contextWord) + ", context word is in stoplist=" + stoplist.contains(contextWord)); //DEBUG
+                    //System.out.println("d=" + d + ", drc=" + drString + ", context word=" + contextWord + ", drc has context word=" + drc.hasContextWord(contextWord) + ", context word is in stoplist=" + stoplist.contains(contextWord)); //DEBUG
                     if(contextWord != null && !drc.hasContextWord(contextWord) && !stoplist.contains(contextWord)){
                         drc.setContextWord(d, new ContextWord(d, contextWord));
                         if(d >= getDimensionality()) return;
                         d++;
                     }
+                //}else{
+                    //finishedIterators++;
                 }
             }
         }
@@ -85,7 +89,7 @@ public class DepNeighbourhoodSpace extends TensorSpace {
 	public static void ensureDimensionObjects(File contextCountsFile){
         if(!hasDimensions()){
             Helper.report("[DepNeighbourhoodSpace] This space is missing dimension objects! Assigning context words to all dep relation clusters from \"" + contextCountsFile.getName() + "\"");
-            DepContextCounts dcc = DepContextCounts.importFromFile(contextCountsFile);
+            DepContextCounts dcc = DepContextCounter.getContextCounts(Corpus.getFolderName(), contextCountsFile, -1);
 
             //create vocabulary file for each subspace that doesn't already have one
 			if(stoplistFilename != null) importStoplist();
@@ -213,6 +217,9 @@ public class DepNeighbourhoodSpace extends TensorSpace {
 					case "stoplistfile":
 						stoplistFilename = valueString;
 						break;
+                    case "marginalcountsfile":
+                        marginalCountsFilename = valueString;
+                        break;
                 }
             }else{
                 Helper.report("[DepNeighbourhoodSpace] Could not parse hyperparameter line \"" + line + "\"...");
@@ -277,11 +284,10 @@ public class DepNeighbourhoodSpace extends TensorSpace {
     }
     
     public static void saveToWriter(BufferedWriter out) throws IOException{
-        //out.write("<space name=\"" + getName() + "\" order=\"" + getOrder() + "\" dimensionality=\"" + getDimensionality() + "\" corpusformat=\"" + Corpus.getFormat() + "\" corpusfolder=\"" + Corpus.getFolderName() + "\" contextcountsfile=\"" + contextCountsFilename + "\" datasetwordsfile=\"" + datasetWordsFilename + "\">\n");
         out.write("<space>\n");
         
         //hyperparamters
-        out.write("<hyperparameters>\nname=\"" + getName() + "\"\norder=\"" + getOrder() + "\"\ndimensionality=\"" + getDimensionality() + "\"\ncorpusformat=\"" + Corpus.getFormat() + "\"\ncorpusfolder=\"" + Corpus.getFolderName() + "\"\ncontextcountsfile=\"" + contextCountsFilename + "\"\ndatasetwordsfile=\"" + datasetWordsFilename + "\"\nstoplistfile=\"" + stoplistFilename + "\"\n</hyperparameters>\n");
+        out.write("<hyperparameters>\nname=\"" + getName() + "\"\norder=\"" + getOrder() + "\"\ndimensionality=\"" + getDimensionality() + "\"\ncorpusformat=\"" + Corpus.getFormat() + "\"\ncorpusfolder=\"" + Corpus.getFolderName() + "\"\ncontextcountsfile=\"" + contextCountsFilename + "\"\ndatasetwordsfile=\"" + datasetWordsFilename + "\"\nstoplistfile=\"" + stoplistFilename + "\"\nmarginalcountsfile=\"" + marginalCountsFilename + "\"\n</hyperparameters>\n");
         
         Vocabulary.saveToWriter(out);
         for(int m=1; m<=getOrder(); m++){

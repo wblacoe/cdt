@@ -10,13 +10,15 @@ import java.io.IOException;
  */
 public class Instance extends AbstractInstance {
 
-    protected String wordPair;
-    protected float label;
+    protected String word1, word2;
+    protected float expected, predicted;
     
     public Instance(){
         index = -1;
-        wordPair = null;
-        label = -1;
+        word1 = null;
+        word2 = null;
+        expected = -1;
+        predicted = -1;
     }
     public Instance(String word1, String word2, float label){
         setInstance(word1, word2, label);
@@ -24,8 +26,9 @@ public class Instance extends AbstractInstance {
     
     //ignore word order
     private void setInstance(String word1, String word2, float label){
-        wordPair = word1.compareTo(word2) <= 0 ? word1 + "#" + word2 : word2 + "#" + word1;
-        this.label = label;
+        this.word1 = word1;
+        this.word2 = word2;
+        this.expected = label;
     }
     
     public static Instance importFromReader(BufferedReader in) throws IOException{
@@ -34,8 +37,8 @@ public class Instance extends AbstractInstance {
             return null;
         }else{
             String[] entries = line.split("\t");
-            String word1 = entries[0];
-            String word2 = entries[1];
+            String word1 = entries[0].toLowerCase();
+            String word2 = entries[1].toLowerCase();
             Float label = Float.parseFloat(entries[2]);
             return new Instance(word1, word2, label);
         }
