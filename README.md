@@ -16,6 +16,8 @@ Proceedings of the 8th International Conference on Quantum Interaction (QI 2014)
 </code></pre>
 
 
+<h3>Tutorial for running a Wordsim353 experiment</h3>
+
 <ol>
 <li>Dependency-parse the corpus and save as text file or gzipped text file. Dividing the corpus into multiple files (kept in the same folder) is recommended because threading is used to process one file per thread. Make sure the files' text is in the following format, where &lt;s&gt; tags sentences and &lt;text&gt; tags documents:</li>
 
@@ -45,7 +47,6 @@ Proceedings of the 8th International Conference on Quantum Interaction (QI 2014)
 &lt;/text&gt;</br>
 </code></pre>
 
-That is, the table above is 
 
 <li>Put all files required for this experiment in a project folder:
 	<ul>
